@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bike Share in San Francisco Bay Area</title>
+</head>
+<body>
+    <div id="nav"></div>
+
+    <div id="content"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+    <script src="http://d3js.org/d3.v6.js"></script>
+    <script src="nav.js"></script>
+    <script>
+        let width = 500;
+        let height = 300;
+        let margin = 50;
+
+        let svg = d3.select('#content').append('svg')
+            .attr('width', width)
+            .attr('height', height);
+
+        function draw(data) {
+            let circles = svg.selectAll("circle")
+            .data(data)
+            .join("circle")
+                .attr("cx", (d, i) => 25 + i * 50)
+                .attr("cy", (d) => d.Numero_de_Alunos)
+                .attr("r", 10);
+        }
+
+        d3.json("../data/example.json")
+            .then(draw)
+            .catch(function(err){console.log(err)});
+
+    </script>
+</body>
+</html>
