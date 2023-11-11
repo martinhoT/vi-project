@@ -13,24 +13,36 @@
     </div>
 
     <div id="filters">
-        <div id="filter-city-traversal" class="slider-3-toggle">
-            <div class="slider-3-toggle-middle-indicator"></div>
-
-            <div class="slider-3-toggle-circle"></div>
-
-            <div class="slider-3-toggle-clickable-area-0"></div>
-            <div class="slider-3-toggle-clickable-area-1"></div>
-            <div class="slider-3-toggle-clickable-area-2"></div>
+        <div id="filter-city-traversal" class="filter-group">
+            <div class="filter-label-left">Within <br> cities</div>
+            <div class="slider-3-toggle">
+                <div class="slider-3-toggle-middle-indicator"></div>
+    
+                <div class="slider-3-toggle-circle"></div>
+    
+                <div class="slider-3-toggle-clickable-areas">
+                    <div class="slider-3-toggle-clickable-area-0"></div>
+                    <div class="slider-3-toggle-clickable-area-1"></div>
+                    <div class="slider-3-toggle-clickable-area-2"></div>
+                </div>
+            </div>
+            <div class="filter-label-right">Between <br> cities</div>
         </div>
 
-        <div id="filter-client-type" class="slider-3-toggle">
-            <div class="slider-3-toggle-middle-indicator"></div>
-
-            <div class="slider-3-toggle-circle"></div>
-
-            <div class="slider-3-toggle-clickable-area-0"></div>
-            <div class="slider-3-toggle-clickable-area-1"></div>
-            <div class="slider-3-toggle-clickable-area-2"></div>
+        <div id="filter-client-type" class="filter-group">
+            <div class="filter-label-left">Customer</div>
+            <div class="slider-3-toggle">
+                <div class="slider-3-toggle-middle-indicator"></div>
+    
+                <div class="slider-3-toggle-circle"></div>
+    
+                <div class="slider-3-toggle-clickable-areas">
+                    <div class="slider-3-toggle-clickable-area-0"></div>
+                    <div class="slider-3-toggle-clickable-area-1"></div>
+                    <div class="slider-3-toggle-clickable-area-2"></div>
+                </div>
+            </div>
+            <div class="filter-label-right">Subscriber</div>
         </div>
 
         <div id="filter-time">
@@ -42,22 +54,43 @@
     <script src="base.js"></script>
     <script>
         // JS
-        const changeSlider3ToggleState = function(sliderId, state) {
+        const changeSlider3ToggleState = function(filterId, state) {
             let left_position = 5 + 35 * state;
             // TODO: animation
-            $(sliderId).children(".slider-3-toggle-circle").css("left", left_position + "px");
+            $(filterId).children(".slider-3-toggle").children(".slider-3-toggle-circle").css("left", left_position + "px");
+            
+            if (state <= 1) {
+                $(filterId).children(".filter-label-left").css("color", "#0CA789");
+            }
+            else {
+                $(filterId).children(".filter-label-left").css("color", "#000000");
+            }
+
+            if (state >= 1) {
+                $(filterId).children(".filter-label-right").css("color", "#0CA789");
+            }
+            else {
+                $(filterId).children(".filter-label-right").css("color", "#000000");
+            }
+            
         }
 
         $(document).ready(function() {
-
             $("#filters").show();
+            filters = ["#filter-city-traversal", "#filter-client-type"];
 
-            for (let filter of ["filter-city-traversal", "filter-client-type"]) {
+            for (let filter of filters) {
                 for (let i = 0; i < 3; i++) {
-                    $("#" + filter).children(".slider-3-toggle-clickable-area-" + i).on("click", function() {
-                        changeSlider3ToggleState("#" + filter, i);
+                    $(filter).children(".slider-3-toggle").children(".slider-3-toggle-clickable-areas").children(".slider-3-toggle-clickable-area-" + i).on("click", function() {
+                        changeSlider3ToggleState(filter, i);
                     })
                 }
+            }
+
+            // Default filter state
+            // TODO: if we want to persist filter state between pages, this has to change
+            for (let filter of filters) {
+                changeSlider3ToggleState(filter, 0);
             }
         });
 

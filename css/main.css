@@ -7,24 +7,28 @@
     padding-top: 50px;
 }
 
-#filters {
+#filters > div {
+    display: inline-block;
+}
 
+.filter-group {
+    position: relative;
+}
+
+.filter-group > div {
+    display: inline-block;
 }
 
 .slider-3-toggle {
-    /* Appearance and children positions */
     position: relative;
     width: 120px;
     height: 50px;
     border-radius: 30px;
     background-color: lightgray;
+}
 
-    /* Disposition of the clickable areas */
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    grid-template-rows: 1fr;
-    grid-column-gap: 0;
-    grid-row-gap: 0px;
+.slider-3-toggle > div {
+    position: absolute;
 }
 
 .slider-3-toggle-middle-indicator {
@@ -44,7 +48,17 @@
     height: 40px;
     width: 40px;
     border-radius: 50%;
-    background-color: gray;
+    background-color: #0CA789;
+}
+
+.slider-3-toggle-clickable-areas {
+    width: 100%;
+    height: 100%;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: 1fr;
+    grid-column-gap: 0;
+    grid-row-gap: 0px;
 }
 
 .slider-3-toggle-clickable-area-0 {
