@@ -12,10 +12,56 @@
         
     </div>
 
+    <div id="filters">
+        <div id="filter-city-traversal" class="slider-3-toggle">
+            <div class="slider-3-toggle-middle-indicator"></div>
+
+            <div class="slider-3-toggle-circle"></div>
+
+            <div class="slider-3-toggle-clickable-area-0"></div>
+            <div class="slider-3-toggle-clickable-area-1"></div>
+            <div class="slider-3-toggle-clickable-area-2"></div>
+        </div>
+
+        <div id="filter-client-type" class="slider-3-toggle">
+            <div class="slider-3-toggle-middle-indicator"></div>
+
+            <div class="slider-3-toggle-circle"></div>
+
+            <div class="slider-3-toggle-clickable-area-0"></div>
+            <div class="slider-3-toggle-clickable-area-1"></div>
+            <div class="slider-3-toggle-clickable-area-2"></div>
+        </div>
+
+        <div id="filter-time">
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
     <script src="http://d3js.org/d3.v6.js"></script>
-    <script src="nav.js"></script>
+    <script src="base.js"></script>
     <script>
+        // JS
+        const changeSlider3ToggleState = function(sliderId, state) {
+            let left_position = 5 + 35 * state;
+            // TODO: animation
+            $(sliderId).children(".slider-3-toggle-circle").css("left", left_position + "px");
+        }
+
+        $(document).ready(function() {
+
+            $("#filters").show();
+
+            for (let filter of ["filter-city-traversal", "filter-client-type"]) {
+                for (let i = 0; i < 3; i++) {
+                    $("#" + filter).children(".slider-3-toggle-clickable-area-" + i).on("click", function() {
+                        changeSlider3ToggleState("#" + filter, i);
+                    })
+                }
+            }
+        });
+
+        // D3
         let width = 500;
         let height = 300;
         let margin = 50;
