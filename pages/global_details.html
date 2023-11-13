@@ -101,22 +101,17 @@
             )
         }
 
+        const sliderFilters = ["#filter-city-traversal", "#filter-client-type"];
+
         $(document).ready(function() {
             $("#filters").show();
-            filters = ["#filter-city-traversal", "#filter-client-type"];
 
-            for (let filter of filters) {
+            for (let filter of sliderFilters) {
                 for (let i = 0; i < 3; i++) {
                     $(filter).children(".slider-3-toggle").children(".slider-3-toggle-clickable-areas").children(".slider-3-toggle-clickable-area-" + i).on("click", function() {
                         changeSlider3ToggleState(filter, i);
                     })
                 }
-            }
-
-            // Default filter state
-            // TODO: if we want to persist filter state between pages, this has to change
-            for (let filter of filters) {
-                changeSlider3ToggleState(filter, 0);
             }
         });
 
@@ -131,10 +126,11 @@
             .attr('width', width)
             .attr('height', height);
 
+        // TODO: on brush single-click it disappears, let it stay?
         function addTimeSlider(initialLeft, initialRight, domain, callback) {
             const timeSliderWidth = 200
             const timeSliderHeight = 20
-            const timeSliderLabelWidth = 30
+            const timeSliderLabelWidth = 100
 
             let timeFilterSvg = d3.select('#filter-time').append('svg')
                 .attr('width', timeSliderWidth + timeSliderLabelWidth * 2)
@@ -173,18 +169,22 @@
                 
                 timeSlider.selectAll("text")
                     .text(function(d, i) {
-                        return Math.round(range[i])
+                        let date = new Date(range[i]);
+                        return `${date.getUTCDate()}/${date.getUTCMonth() + 1}/${date.getUTCFullYear()}`
                     })
+                
+                // NOTE: comment if update every brush action is too heavy
+                callback(range[0], range[1])
             }
 
             function brushEnded() {
-                let selection = d3.brushSelection(this)
-                if (selection == null)
-                    return
+                // let selection = d3.brushSelection(this)
+                // if (selection == null)
+                //     return
 
-                let range = selection.map(x.invert)
+                // let range = selection.map(x.invert)
                 
-                callback(range[0], range[1])
+                // callback(range[0], range[1])
             }
 
             brush.move(brushGroup, [initialLeft, initialRight].map(x))
@@ -193,33 +193,82 @@
         }
 
         function draw(data) {
-            let circles = svg.selectAll("circle")
-            .data(data)
-            .join("circle")
-                .attr("cx", (d, i) => 25 + i * 50)
-                .attr("cy", (d) => d.Numero_de_Alunos)
-                .attr("r", 10)
-                .attr("fill", (d) => color(d.city));
-            
+            const dateParser = d3.utcParse("%-m/%-d/%Y %H:%M");
+            let dateStartExtent = d3.extent(d3.map(data, (d) => dateParser(d.start_date)));
+            let dateEndExtent = d3.extent(d3.map(data, (d) => dateParser(d.end_date)));
+
+            let dateExtent = [dateStartExtent[0], dateEndExtent[1]];
+
+            let filter = {
+                cityTraversal: 0,
+                clientType: 0,
+                timeStart: dateExtent[0],
+                timeEnd: dateExtent[1],
+            }
+
             function filterDataByCityTraversal(filterType) {
-                alert(filterType)
+                filter.cityTraversal = filterType;
+                updateData(filter);
             }
 
             function filterDataByClientType(filterType) {
-                alert(filterType)
+                filter.clientType = filterType;
+                updateData(filter);
             }
 
             function filterDataByTime(start, end) {
-                alert(start + '-' + end)
+                filter.timeStart = new Date(start);
+                filter.timeEnd = new Date(end);
+                updateData(filter);
             }
 
+            function updateData(filter) {
+                console.log(filter)
+
+                const cityTraversalFilter0 = (d) => d.city == d.end;  // within cities
+                const cityTraversalFilter1 = (d) => true;                   // both
+                const cityTraversalFilter2 = (d) => d.city != d.end;  // between cities
+
+                const clientTypeFilter0 = (d) => true;  // customer
+                const clientTypeFilter1 = (d) => true;  // both
+                const clientTypeFilter2 = (d) => true;  // subscriber
+
+                let cityTraversalFilter = (filter.cityTraversal == 0) ? cityTraversalFilter0 : ((filter.cityTraversal == 1) ? cityTraversalFilter1 : cityTraversalFilter2);
+                let clientTypeFilter = (filter.clientType == 0) ? clientTypeFilter0 : ((filter.clientType == 1) ? clientTypeFilter1 : clientTypeFilter2);
+
+                console.log(data);
+
+                let dataFiltered = data.filter((d) => {
+                    return dateParser(d.start_date) >= filter.timeStart && dateParser(d.end_date) <= filter.timeEnd && cityTraversalFilter(d) && clientTypeFilter(d);
+                });
+
+                console.log(dataFiltered);
+
+                let circles = svg.selectAll("circle")
+                    .data(dataFiltered)
+                    .join("circle")
+                        .attr("cx", (d, i) => 25 + i * 50)
+                        .attr("cy", (d) => d.Numero_de_Alunos)
+                        .attr("r", 10)
+                        .attr("fill", (d) => color(d.city));
+            }
+
+            updateData(filter);
+
+            // Bind callbacks
             d3.select("#filter-city-traversal").on("data-update", function () {
                 filterDataByCityTraversal(this.value)
             })
             d3.select("#filter-client-type").on("data-update", function () {
                 filterDataByClientType(this.value)
             })
-            let timeSliderBrush = addTimeSlider(20, 40, [10, 100], filterDataByTime)
+            let timeSliderBrush = addTimeSlider(filter.timeStart, filter.timeEnd, dateExtent, filterDataByTime)
+
+            // Default filter state
+            // TODO: if we want to persist filter state between pages, this has to change
+            for (let filter of sliderFilters) {
+                changeSlider3ToggleState(filter, 0);
+            }
         }
             
 
