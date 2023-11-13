@@ -53,12 +53,18 @@
     <script src="http://d3js.org/d3.v6.js"></script>
     <script src="base.js"></script>
     <script>
+
+        // Whenever the filters change, dispatch the custom event 'data-update' with the appropriate details.
+        // D3 will listen for these events
+        // const dataUpdateEvent = new CustomEvent('data-update', {detail: ...});
+
         // JS
         const changeSlider3ToggleState = function(filterId, state) {
             let left_position = 5 + 35 * state;
             // TODO: animation
             $(filterId).children(".slider-3-toggle").children(".slider-3-toggle-circle").css("left", left_position + "px");
-            
+
+            // Change the labels' color
             if (state <= 1) {
                 $(filterId).children(".filter-label-left").css("color", "#0CA789");
             }
@@ -73,6 +79,26 @@
                 $(filterId).children(".filter-label-right").css("color", "#000000");
             }
             
+            // TODO: take this elsewhere, it's out-of-place in this function
+            let filterOperation = undefined;
+            // Within cities
+            if (state == 0) {
+                filterOperation = (d) => (d.city == d.end);
+            
+            // Both
+            } else if (state == 1) {
+                filterOperation = (d) => true;
+
+            // Between cities
+            } else if (state == 2) {
+                filterOperation = (d) => (d.city != d.end);
+            }
+
+            let filterElem = document.getElementById(filterId.slice(1));
+            filterElem.value = state;
+            filterElem.dispatchEvent(
+                new Event('data-update')
+            )
         }
 
         $(document).ready(function() {
@@ -99,11 +125,13 @@
         let height = 300;
         let margin = 50;
 
+        const color = d3.scaleOrdinal(d3.schemeCategory10);
+
         let svg = d3.select('#content').append('svg')
             .attr('width', width)
             .attr('height', height);
 
-        function addTimeSlider(initialLeft, initialRight, domain) {
+        function addTimeSlider(initialLeft, initialRight, domain, callback) {
             const timeSliderWidth = 200
             const timeSliderHeight = 20
             const timeSliderLabelWidth = 30
@@ -128,15 +156,20 @@
             var brush = d3.brushX()
                 .extent([[0, 0], [timeSliderWidth, timeSliderHeight]])
                 .on('brush', brushed)
+                .on('end', brushEnded)
 
             var brushGroup = timeFilterSvg.append('g')
                 .attr('class', 'brush')
                 .attr('transform', 'translate(' + timeSliderLabelWidth + ',' + 0 + ')')
                 .call(brush)
             
-            function brushed() {
-                var range = d3.brushSelection(this)
-                    .map(x.invert)
+            function brushed(event) {
+                // Alternative: let selection = event.selection
+                let selection = d3.brushSelection(this)
+                if (selection == null)
+                    return
+
+                let range = selection.map(x.invert)
                 
                 timeSlider.selectAll("text")
                     .text(function(d, i) {
@@ -144,10 +177,20 @@
                     })
             }
 
-            brush.move(brushGroup, [initialLeft, initialRight].map(x))
-        }
+            function brushEnded() {
+                let selection = d3.brushSelection(this)
+                if (selection == null)
+                    return
 
-        addTimeSlider(20, 40, [10, 100])
+                let range = selection.map(x.invert)
+                
+                callback(range[0], range[1])
+            }
+
+            brush.move(brushGroup, [initialLeft, initialRight].map(x))
+
+            return brush
+        }
 
         function draw(data) {
             let circles = svg.selectAll("circle")
@@ -155,8 +198,30 @@
             .join("circle")
                 .attr("cx", (d, i) => 25 + i * 50)
                 .attr("cy", (d) => d.Numero_de_Alunos)
-                .attr("r", 10);
+                .attr("r", 10)
+                .attr("fill", (d) => color(d.city));
+            
+            function filterDataByCityTraversal(filterType) {
+                alert(filterType)
+            }
+
+            function filterDataByClientType(filterType) {
+                alert(filterType)
+            }
+
+            function filterDataByTime(start, end) {
+                alert(start + '-' + end)
+            }
+
+            d3.select("#filter-city-traversal").on("data-update", function () {
+                filterDataByCityTraversal(this.value)
+            })
+            d3.select("#filter-client-type").on("data-update", function () {
+                filterDataByClientType(this.value)
+            })
+            let timeSliderBrush = addTimeSlider(20, 40, [10, 100], filterDataByTime)
         }
+            
 
         d3.json("../data/example.json")
             .then(draw)
