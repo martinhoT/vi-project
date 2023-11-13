@@ -103,6 +103,51 @@
             .attr('width', width)
             .attr('height', height);
 
+        function addTimeSlider() {
+            let timeFilterSvg = d3.select('#filter-time').append('svg')
+                .attr('width', width)
+                .attr('height', height)
+
+            const timeSlider = timeFilterSvg.append('g')
+            const timeSliderWidth = 200
+            const timeSliderHeight = 30
+            const timeSliderLabelWidth = 20
+
+            let x = d3.scaleLinear()
+                .domain([0, 100])
+                .range([0, timeSliderWidth])
+
+            timeSlider.selectAll('text')
+                .data([[0, 15], [timeSliderWidth + timeSliderLabelWidth, 15]])
+                .join('text')
+                    .text('A')
+                    .attr('x', (d) => d[0])
+                    .attr('y', (d) => d[1])
+
+            var brush = d3.brushX()
+                .extent([[0, 0], [timeSliderWidth, timeSliderHeight]])
+                .on('brush', brushed)
+
+            var brushGroup = timeFilterSvg.append('g')
+                .attr('class', 'brush')
+                .attr('transform', 'translate(' + timeSliderLabelWidth + ',' + 0 + ')')
+                .call(brush)
+            
+            function brushed() {
+                var range = d3.brushSelection(this)
+                    .map(x.invert)
+                
+                timeSlider.selectAll("text")
+                    .text(function(d, i) {
+                        return Math.round(range[i])
+                    })
+            }
+
+            brush.move(brushGroup, [0, 40].map(x))
+        }
+
+        addTimeSlider()
+
         function draw(data) {
             let circles = svg.selectAll("circle")
             .data(data)
