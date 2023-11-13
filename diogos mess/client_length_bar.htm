@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+    <title>Total Duration by Subscription Type</title>
+</head>
+<body>
+
+<script>
+
+
+    // Use D3 to load the CSV file
+    d3.csv("trip.csv").then(function(data) {
+        // Convert duration strings to numbers
+        data.forEach(function(d) {
+            d.duration = +d.duration;
+        });
+
+        // Group data by subscription type and sum the duration for each group
+        const groupedData = d3.group(data, d => d.subscription_type);
+
+        // If you are using D3 version 6 or later, replace the above line with:
+        // const groupedData = d3.groupBy(data, d => d.subscription_type);
+
+        // Calculate total duration for each subscription type
+        const totalDurationBySubscription = new Map();
+
+        groupedData.forEach((value, key) => {
+            const totalDuration = d3.sum(value, d => d.duration);
+            totalDurationBySubscription.set(key, totalDuration);
+        });
+
+        
+   
+     // Create a simple array with values as the ratio of totalDurationBySubscription to the count of instances
+     const ratioArray = Array.from(groupedData.keys()).map(key => totalDurationBySubscription.get(key) / groupedData.get(key).length);
+
+     
+// Convert ratioArray to a Map
+const ratioMap = new Map(Array.from(groupedData.keys()).map((key, i) => [key, ratioArray[i]]));
+
+console.log(ratioMap);
+
+
+        // Set up SVG dimensions
+        var margin = { top: 20, right: 100, bottom: 70, left: 70 };
+        var w = 500 - margin.left - margin.right;
+        var h = 300 - margin.top - margin.bottom;
+
+        // Create an SVG element
+        var svg = d3.select("body")
+                    .append("svg")
+                    .attr("width", w + margin.left + margin.right + 150) // Adjust the value as needed
+
+                    .attr("height", h + margin.top + margin.bottom)
+                    .append("g")
+                    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+        // Get the maximum total duration
+        var maxDuration = Math.max(...Array.from(ratioMap.values()));
+
+        console.log(ratioMap)
+
+
+        
+        // Create rectangles based on the total duration
+        var rects = svg.selectAll("rect")
+            .data(Array.from(ratioMap.entries()))
+            .enter()
+            .append("rect")
+            .attr("x", function (d, i) {
+                return (i * (w / ratioMap.size));
+            })
+            .attr("y", function (d) {
+                return h - (h * d[1] / maxDuration);
+            })
+            .attr("width", (w / ratioMap.size - 1))
+            .attr("height", function (d) {
+                return (h * d[1] / maxDuration);
+            })
+            .attr("fill", function (d, i) {
+    // Use an alternating pattern of blue and orange
+    return i % 2 === 0 ? "blue" : "orange";
+});
+
+        // Create x and y scales
+        var xScale = d3.scaleBand()
+            .domain(Array.from(ratioArray.keys()))
+            .range([0, w]);
+
+        var yScale = d3.scaleLinear()
+            .domain([0, maxDuration])
+            .range([h, 0]);
+
+        // Create x and y axes
+        var xAxis = d3.axisBottom(xScale);
+        var yAxis = d3.axisLeft(yScale);
+
+        // Append x and y axes to the SVG
+        svg.append("g")
+            .attr("transform", "translate(0," + h + ")")
+            .call(xAxis);
+
+        svg.append("g")
+            .call(yAxis);
+
+        // Add title to the chart
+        svg.append("text")
+            .attr("x", w / 2)
+            .attr("y", -margin.top / 2.3)
+            .attr("text-anchor", "middle")
+            .style("font-size", "16px")
+            .text("Total Duration by Subscription Type");
+
+        // Add Y-axis title
+        svg.append("text")
+            .attr("transform", "rotate(-90)")
+            .attr("y", -margin.left + 10)
+            .attr("x", -h / 2)
+            .attr("dy", "1em")
+            .style("text-anchor", "middle")
+            .style("font-size", "14px")
+            .text("Total Duration");
+
+
+        // Add legend to the right
+var legend = svg.selectAll(".legend")
+    .data(Array.from(ratioMap.entries()))
+    .enter().append("g")
+    .attr("class", "legend")
+    .attr("transform", function(d, i) {
+    return "translate(" + (w + margin.right ) + "," + (i * 25) + ")"; // separação vertical
+});
+
+
+// retangulo da legenda
+legend.append("rect")
+    .attr("width", 18)
+    .attr("height", 18)
+    .attr("fill", function (d, i) {
+    // Use an alternating pattern of blue and orange
+    return i % 2 === 0 ? "blue" : "orange";
+});
+
+
+
+
+    legend.append("text")
+    .attr("x", -80)
+    .attr("y", 9)
+    .attr("dy", ".35em")
+    .style("text-anchor", "start")
+    .style("fill", "black") // You can adjust the color for visibility
+    .text(function(d) {
+        return d[0] ;
+    });
+
+   
+    })
+
+</script>
+
+</body>
+</html>
