@@ -8,8 +8,46 @@
 <body>
     <div id="nav"></div>
 
-    <div id="content">
-        
+    <div id="content" class="vis3-grid">
+        <div id="content-traffic">
+            <h2>
+                Global bike traffic for each
+                <select name="content-traffic-class" id="content-traffic-class">
+                    <option value="city">City</option>
+                    <option value="station">Station</option>
+                </select>
+            </h2>
+            
+            <p>
+                Sort by
+                <select name="content-traffic-sort" id="content-traffic-sort">
+                    <option value="alphabetic">Alphabetic</option>
+                    <option value="total_trips">Total trips</option>
+                    <option value="incoming_trips">Incoming trips</option>
+                    <option value="outgoing_trips">Outgoing trips</option>
+                </select>
+
+                <input type="checkbox" name="content-traffic-sort-asc" id="content-traffic-sort-asc" checked>
+                Ascending
+            </p>
+
+            <div id="content-traffic-vis"></div>
+        </div>
+
+        <div id="content-bike-usage">
+
+            <div id="content-bike-usage-vis"></div>
+        </div>
+
+        <div id="content-client-total-trips">
+
+            <div id="content-client-total-trips-vis"></div>
+        </div>
+
+        <div id="content-client-length-trips">
+
+            <div id="content-client-length-trips-vis"></div>
+        </div>
     </div>
 
     <div id="filters">
@@ -79,21 +117,6 @@
                 $(filterId).children(".filter-label-right").css("color", "#000000");
             }
             
-            // TODO: take this elsewhere, it's out-of-place in this function
-            let filterOperation = undefined;
-            // Within cities
-            if (state == 0) {
-                filterOperation = (d) => (d.city == d.end);
-            
-            // Both
-            } else if (state == 1) {
-                filterOperation = (d) => true;
-
-            // Between cities
-            } else if (state == 2) {
-                filterOperation = (d) => (d.city != d.end);
-            }
-
             let filterElem = document.getElementById(filterId.slice(1));
             filterElem.value = state;
             filterElem.dispatchEvent(
@@ -116,15 +139,6 @@
         });
 
         // D3
-        let width = 500;
-        let height = 300;
-        let margin = 50;
-
-        const color = d3.scaleOrdinal(d3.schemeCategory10);
-
-        let svg = d3.select('#content').append('svg')
-            .attr('width', width)
-            .attr('height', height);
 
         // TODO: on brush single-click it disappears, let it stay?
         function addTimeSlider(initialLeft, initialRight, domain, callback) {
@@ -192,6 +206,44 @@
             return brush
         }
 
+        function visTraffic() {
+            const width = 500;
+            const height = 300;
+            const margin = 50;
+
+            const colorOrdinal = d3.scaleOrdinal(d3.schemeCategory10);
+
+            const svg = d3.select('#content-traffic-vis').append('svg')
+                .attr('width', width)
+            
+            return (dataFiltered) => svg.selectAll("circle")
+                .data(dataFiltered)
+                .join("circle")
+                    .attr("cx", (d, i) => 25 + i * 50)
+                    .attr("cy", (d) => d.Numero_de_Alunos)
+                    .attr("r", 10)
+                    .attr("fill", (d) => colorOrdinal(d.city));
+        }
+
+        function visBikeUsage() {
+            return () => null;
+        }
+
+        function visClientTotalTrips() {
+            return () => null;
+        }
+
+        function visClientLengthTrips() {
+            return () => null;
+        }
+
+        const data_draw_callbacks = [
+            visTraffic(),
+            visBikeUsage(),
+            visClientTotalTrips(),
+            visClientLengthTrips()
+        ]
+
         function draw(data) {
             const dateParser = d3.utcParse("%-m/%-d/%Y %H:%M");
             let dateStartExtent = d3.extent(d3.map(data, (d) => dateParser(d.start_date)));
@@ -223,8 +275,6 @@
             }
 
             function updateData(filter) {
-                console.log(filter)
-
                 const cityTraversalFilter0 = (d) => d.city == d.end;  // within cities
                 const cityTraversalFilter1 = (d) => true;                   // both
                 const cityTraversalFilter2 = (d) => d.city != d.end;  // between cities
@@ -236,21 +286,13 @@
                 let cityTraversalFilter = (filter.cityTraversal == 0) ? cityTraversalFilter0 : ((filter.cityTraversal == 1) ? cityTraversalFilter1 : cityTraversalFilter2);
                 let clientTypeFilter = (filter.clientType == 0) ? clientTypeFilter0 : ((filter.clientType == 1) ? clientTypeFilter1 : clientTypeFilter2);
 
-                console.log(data);
-
                 let dataFiltered = data.filter((d) => {
                     return dateParser(d.start_date) >= filter.timeStart && dateParser(d.end_date) <= filter.timeEnd && cityTraversalFilter(d) && clientTypeFilter(d);
                 });
 
-                console.log(dataFiltered);
-
-                let circles = svg.selectAll("circle")
-                    .data(dataFiltered)
-                    .join("circle")
-                        .attr("cx", (d, i) => 25 + i * 50)
-                        .attr("cy", (d) => d.Numero_de_Alunos)
-                        .attr("r", 10)
-                        .attr("fill", (d) => color(d.city));
+                for (callback of data_draw_callbacks) {
+                    callback(dataFiltered);
+                }
             }
 
             updateData(filter);
@@ -270,7 +312,6 @@
                 changeSlider3ToggleState(filter, 0);
             }
         }
-            
 
         d3.json("../data/example.json")
             .then(draw)
