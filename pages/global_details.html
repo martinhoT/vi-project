@@ -34,14 +34,14 @@
             <div id="content-traffic-vis"></div>
         </div>
 
-        <div id="content-bike-usage">
-
-            <div id="content-bike-usage-vis"></div>
-        </div>
-
         <div id="content-client-total-trips">
 
             <div id="content-client-total-trips-vis"></div>
+        </div>
+
+        <div id="content-bike-usage">
+
+            <div id="content-bike-usage-vis"></div>
         </div>
 
         <div id="content-client-length-trips">
@@ -187,50 +187,162 @@
                         return `${date.getUTCDate()}/${date.getUTCMonth() + 1}/${date.getUTCFullYear()}`
                     })
                 
-                // NOTE: comment if update every brush action is too heavy
-                callback(range[0], range[1])
-            }
-
-            function brushEnded() {
-                // let selection = d3.brushSelection(this)
-                // if (selection == null)
-                //     return
-
-                // let range = selection.map(x.invert)
-                
+                // NOTE: comment if update every brush action is too heavy, and use brushEnded instead
                 // callback(range[0], range[1])
             }
 
-            brush.move(brushGroup, [initialLeft, initialRight].map(x))
+            function brushEnded() {
+                let selection = d3.brushSelection(this)
+                if (selection == null)
+                    return
+
+                let range = selection.map(x.invert)
+                
+                callback(range[0], range[1])
+            }
+
+            brush.move(brushGroup, [initialLeft, initialRight].map(x));
 
             return brush
         }
 
         function visTraffic() {
-            const width = 500;
-            const height = 300;
-            const margin = 50;
-
-            const colorOrdinal = d3.scaleOrdinal(d3.schemeCategory10);
-
-            const svg = d3.select('#content-traffic-vis').append('svg')
-                .attr('width', width)
-            
-            return (dataFiltered) => svg.selectAll("circle")
-                .data(dataFiltered)
-                .join("circle")
-                    .attr("cx", (d, i) => 25 + i * 50)
-                    .attr("cy", (d) => d.Numero_de_Alunos)
-                    .attr("r", 10)
-                    .attr("fill", (d) => colorOrdinal(d.city));
+            return () => null;
         }
 
         function visBikeUsage() {
+            // const width = 500;
+            // const height = 300;
+            // const margin = 50;
+
+            // const colorOrdinal = d3.scaleOrdinal(d3.schemeCategory10);
+
+            // const svg = d3.select('#content-traffic-vis').append('svg')
+            //     .attr('width', width)
+            
+            // return (dataFiltered) => svg.selectAll("circle")
+            //     .data(dataFiltered)
+            //     .join("circle")
+            //         .attr("cx", (d, i) => 25 + i * 50)
+            //         .attr("cy", (d) => d.Numero_de_Alunos)
+            //         .attr("r", 10)
+            //         .attr("fill", (d) => colorOrdinal(d.city));
+
             return () => null;
         }
 
         function visClientTotalTrips() {
-            return () => null;
+            // Set up SVG dimensions
+            const margin = { top: 20, right: 20, bottom: 70, left: 70 };
+            const w = 500 - margin.left - margin.right;
+            const h = 300 - margin.top - margin.bottom;
+
+            const svg = d3.select("#content-client-total-trips-vis")
+                .append("svg")
+                .attr("width", w + margin.left + margin.right)
+                .attr("height", h + margin.top + margin.bottom)
+                .append("g")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+            // TODO: just adding elements on data updates instead of actually updating what's already there
+            return (data) => {
+                // Extract the subscription_type column
+                let subscriptionTypes = data.map(function(d) {
+                    return d.subscription_type;
+                });
+
+                // Count occurrences of each label
+                let labelCounts = {};
+                subscriptionTypes.forEach(function(label) {
+                    labelCounts[label] = (labelCounts[label] || 0) + 1;
+                });
+
+                let maxCount = Math.max(...Object.values(labelCounts));
+
+                // Create rectangles based on the counts
+                var rects = svg.selectAll("rect")
+                    .data(Object.entries(labelCounts))
+                    .join("rect")
+                    .attr("x", function (d, i) {
+                        return (i * (w / Object.keys(labelCounts).length));
+                    })  
+                    .attr("y", function (d) {
+                        return h - (h * d[1] / maxCount);
+                    })
+                    .attr("width", (w / Object.keys(labelCounts).length - 1))
+                    .attr("height", function (d) {
+                        return (h * d[1] / maxCount);
+                    })
+                    .attr("fill", function (d) {
+                        return "rgb(0, 100, " + Math.round((d[1] / maxCount) * 255) + ")";
+                    });
+
+                // Create x and y scales
+                var xScale = d3.scaleBand()
+                    .domain(d3.range(Object.keys(labelCounts).length))
+                    .range([0, w])
+                    .padding(0.1);
+
+                var yScale = d3.scaleLinear()
+                    .domain([0, maxCount])
+                    .range([h, 0]);
+
+                // Create x and y axes
+                var xAxis = d3.axisBottom(xScale);
+                var yAxis = d3.axisLeft(yScale);
+
+                // Append x and y axes to the SVG
+                svg.append("g")
+                    .attr("transform", "translate(0," + h + ")")
+                    .call(xAxis);
+
+                svg.append("g")
+                    .call(yAxis);
+
+                // Add title to the chart
+                svg.append("text")
+                    .attr("x", w / 2)
+                    .attr("y", -margin.top / 2.3)
+                    .attr("text-anchor", "middle")
+                    .style("font-size", "16px")
+                    .text("Subscription Types Occurrences");
+
+                // Add Y-axis title
+                svg.append("text")
+                    .attr("transform", "rotate(-90)")
+                    .attr("y", -margin.left + 10)
+                    .attr("x", -h / 2)
+                    .attr("dy", "1em")
+                    .style("text-anchor", "middle")
+                    .style("font-size", "14px")
+                    .text("Count");
+
+                // Add legend
+                let legend = svg.selectAll(".legend")
+                    .data(Object.entries(labelCounts))
+                    .join("g")
+                    .attr("class", "legend")
+                    .attr("transform", function(d, i) {
+                        return "translate(0," + i * 20 + ")";
+                    });
+
+                legend.append("rect")
+                    .attr("x", w - 18)
+                    .attr("width", 18)
+                    .attr("height", 18)
+                    .style("fill", function(d) {
+                        return "rgb(0, 100, " + Math.round((d[1] / maxCount) * 255) + ")";
+                    });
+
+                legend.append("text")
+                    .attr("x", w - 24)
+                    .attr("y", 9)
+                    .attr("dy", ".35em")
+                    .style("text-anchor", "end")
+                    .text(function(d) {
+                        return d[0] ;
+                    });
+            };
         }
 
         function visClientLengthTrips() {
@@ -244,10 +356,14 @@
             visClientLengthTrips()
         ]
 
+        // Trip data
         function draw(data) {
+            console.log("Loaded data");
+            console.log("Getting date extents...");
             const dateParser = d3.utcParse("%-m/%-d/%Y %H:%M");
             let dateStartExtent = d3.extent(d3.map(data, (d) => dateParser(d.start_date)));
             let dateEndExtent = d3.extent(d3.map(data, (d) => dateParser(d.end_date)));
+            console.log("Date extents obtained")
 
             let dateExtent = [dateStartExtent[0], dateEndExtent[1]];
 
@@ -259,22 +375,35 @@
             }
 
             function filterDataByCityTraversal(filterType) {
+                if (filter.cityTraversal == filterType)
+                    return;
+
                 filter.cityTraversal = filterType;
+                console.log("Filter by city traversal called");
                 updateData(filter);
             }
 
             function filterDataByClientType(filterType) {
+                if (filter.clientType == filterType)
+                    return;
+
+                console.log("Filter by client type called");
                 filter.clientType = filterType;
                 updateData(filter);
             }
 
             function filterDataByTime(start, end) {
+                if (filter.timeStart.getTime() == start && filter.timeEnd.getTime() == end)
+                    return;
+
+                console.log("Filter by time called");
                 filter.timeStart = new Date(start);
                 filter.timeEnd = new Date(end);
                 updateData(filter);
             }
 
             function updateData(filter) {
+                console.log("Filtering data...");
                 const cityTraversalFilter0 = (d) => d.city == d.end;  // within cities
                 const cityTraversalFilter1 = (d) => true;                   // both
                 const cityTraversalFilter2 = (d) => d.city != d.end;  // between cities
@@ -289,31 +418,40 @@
                 let dataFiltered = data.filter((d) => {
                     return dateParser(d.start_date) >= filter.timeStart && dateParser(d.end_date) <= filter.timeEnd && cityTraversalFilter(d) && clientTypeFilter(d);
                 });
+                console.log("Data filtered");
 
                 for (callback of data_draw_callbacks) {
                     callback(dataFiltered);
                 }
             }
 
-            updateData(filter);
-
-            // Bind callbacks
-            d3.select("#filter-city-traversal").on("data-update", function () {
-                filterDataByCityTraversal(this.value)
-            })
-            d3.select("#filter-client-type").on("data-update", function () {
-                filterDataByClientType(this.value)
-            })
-            let timeSliderBrush = addTimeSlider(filter.timeStart, filter.timeEnd, dateExtent, filterDataByTime)
-
+            console.log("Preparing filters...");
             // Default filter state
             // TODO: if we want to persist filter state between pages, this has to change
             for (let filter of sliderFilters) {
                 changeSlider3ToggleState(filter, 0);
             }
+
+            // Bind callbacks
+            d3.select("#filter-city-traversal").on("data-update", function () {
+                filterDataByCityTraversal(this.value)
+            });
+            d3.select("#filter-client-type").on("data-update", function () {
+                filterDataByClientType(this.value)
+            });
+            let timeSliderBrush = addTimeSlider(filter.timeStart, filter.timeEnd, dateExtent, filterDataByTime);
+            console.log("Filters prepared");
+
+            console.log("Initializing visualizations");
+            updateData(filter);
         }
 
-        d3.json("../data/example.json")
+        // d3.json("../data/example.json")
+        //     .then(draw)
+        //     .catch(function(err){console.log(err)});
+
+        console.log("Loading data...");
+        d3.csv("../data/trip.csv")
             .then(draw)
             .catch(function(err){console.log(err)});
 
