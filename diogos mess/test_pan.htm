@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <title>Station trips</title>
+    <!-- Create a div where the graph will take place -->
+    <div id="my_dataviz"></div>
+
+</head>
+
+<body>
+
+    <script>
+      // set the dimensions and margins of the graph
+var margin = {top: 10, right: 30, bottom: 200, left: 50},
+    width = 1460 - margin.left - margin.right,
+    height = 900 - margin.top - margin.bottom;
+
+// append the svg object to the body of the page
+var svg = d3.select("#my_dataviz")
+    .append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+// Load the data
+d3.csv("trip.csv").then(function(data) {
+
+    // Data processing for outgoing trips
+    var start_station_counts = {};
+    data.forEach(function(d) {
+        start_station_counts[d.start_station_name] = (start_station_counts[d.start_station_name] || 0) + 1;
+    });
+
+    // Data processing for incoming trips
+    var end_station_counts = {};
+    data.forEach(function(d) {
+        end_station_counts[d.end_station_name] = (end_station_counts[d.end_station_name] || 0) + 1;
+    });
+
+    // Combine both counts for the X-axis labels
+    var allStations = Array.from(new Set([...Object.keys(start_station_counts), ...Object.keys(end_station_counts)]));
+
+    // Add X axis
+    var x = d3.scaleBand()
+        .domain(allStations)
+        .range([0, width])
+        .padding([0.2]);
+
+    svg.append("g")
+        .attr("transform", "translate(0," + height + ")")
+        .call(d3.axisBottom(x).tickSize(0)) .selectAll("text")
+    .attr("transform", "translate(-10,0)rotate(-45)")
+    .style("text-anchor", "end");
+
+    
+
+    // Add Y axis
+    var y = d3.scaleLinear()
+        .domain([0, d3.max(Object.values(start_station_counts).concat(Object.values(end_station_counts)))])
+        .range([height, 0]);
+
+    svg.append("g")
+        .call(d3.axisLeft(y));
+
+    // Color palette
+    var color = d3.scaleOrdinal()
+        .domain(["start", "end"])
+        .range(['#e41a1c', '#377eb8']);
+
+    // Show the bars for outgoing trips
+    svg.append("g")
+        .selectAll("rect")
+        .data(allStations.map(function(station) {
+            return { station: station, value: start_station_counts[station] || 0, type: "start" };
+        }))
+        .enter().append("rect")
+        .attr("x", function(d) { return x(d.station); })
+        .attr("y", function(d) { return y(d.value); })
+        .attr("width", x.bandwidth() / 2)
+        .attr("height", function(d) { return height - y(d.value); })
+        .attr("fill", function(d) { return color(d.type); });
+
+    // Show the bars for incoming trips
+    svg.append("g")
+        .selectAll("rect")
+        .data(allStations.map(function(station) {
+            return { station: station, value: end_station_counts[station] || 0, type: "end" };
+        }))
+        .enter().append("rect")
+        .attr("x", function(d) { return x(d.station) + x.bandwidth() / 2; })
+        .attr("y", function(d) { return y(d.value); })
+        .attr("width", x.bandwidth() / 2)
+        .attr("height", function(d) { return height - y(d.value); })
+        .attr("fill", function(d) { return color(d.type); });
+
+        // Add Legend
+var legend = svg.append("g")
+    .attr("transform", "translate(" + (width - 100) + "," + 20 + ")")
+    .selectAll("g")
+    .data(color.domain().slice().reverse())
+    .enter().append("g")
+    .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
+
+legend.append("rect")
+    .attr("width", 18)
+    .attr("height", 18)
+    .attr("fill", color);
+
+legend.append("text")
+    .attr("x", 24)
+    .attr("y", 9)
+    .attr("dy", ".35em")
+    .style("text-anchor", "start")
+    .text(function(d) { return d === "start" ? "Outgoing" : "Incoming"; });
+
+});
+
+
+
+
+
+
+
+        
+
+
+    </script>
+
+</body>
+
+</html>
