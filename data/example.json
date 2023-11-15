@@ -1,22 +1,42 @@
 [
   {
     "Ano":"1º ano",
-    "Numero_de_Alunos":79
+    "Numero_de_Alunos":79,
+    "city":"A",
+    "end":"B",
+    "start_date":"8/20/2013 12:13",
+    "end_date":"8/25/2013 19:13"
   },
   {
     "Ano":"2º ano",
-    "Numero_de_Alunos":112
+    "Numero_de_Alunos":112,
+    "city":"A",
+    "end":"A",
+    "start_date":"8/27/2013 14:13",
+    "end_date":"9/29/2013 04:13"
   },
   {
     "Ano":"3º ano",
-    "Numero_de_Alunos":68
+    "Numero_de_Alunos":68,
+    "city":"B",
+    "end":"B",
+    "start_date":"8/15/2013 14:13",
+    "end_date":"8/28/2013 14:13"
   },
   {
     "Ano":"4º ano",
-    "Numero_de_Alunos":62
+    "Numero_de_Alunos":62,
+    "city":"A",
+    "end":"B",
+    "start_date":"8/19/2013 14:13",
+    "end_date":"8/29/2013 14:13"
   },
   {
     "Ano":"5º ano",
-    "Numero_de_Alunos":83
+    "Numero_de_Alunos":83,
+    "city":"B",
+    "end":"A",
+    "start_date":"8/29/2013 14:13",
+    "end_date":"8/30/2013 14:13"
   }
 ]
