@@ -62,9 +62,7 @@
             var end_station_counts = {};
             data.forEach(function (d) {
                 end_station_counts[d.end_station_name] = (end_station_counts[d.end_station_name] || 0) + 1;
-            
             });
-
 
             // Combine both counts for the X-axis labels
             var allStations = Array.from(new Set([...Object.keys(start_station_counts), ...Object.keys(end_station_counts)]));
@@ -83,7 +81,7 @@
 
             // Add Y axis
             var y = d3.scaleLinear()
-                .domain([0, d3.max(Object.values(start_station_counts).concat(Object.values(end_station_counts)))])
+                .domain([0, 2 * d3.max(Object.values(start_station_counts).concat(Object.values(end_station_counts)))])
                 .range([height, 0]);
 
             svg.append("g")
@@ -92,7 +90,7 @@
             // Color palette
             var color = d3.scaleOrdinal()
                 .domain(["start", "end"])
-                .range(['#e41a1c', '#377eb8']);
+                .range([ '#377eb8','#e41a1c']);
 
             // Show the bars for outgoing trips
             svg.append("g")
@@ -105,17 +103,17 @@
                     };
                 }))
                 .enter().append("rect")
-                .attr("x", function (d) { return x(d.station) - x.bandwidth() / 2; })
-                .attr("y", function (d) { return y(d.value_start); })
-                .attr("width", x.bandwidth() / 2)
-                .attr("height", function (d) { return height - y(d.value_start); })
-                .attr("fill", color("start"))
+                .attr("x", function (d) { return x(d.station); })
+                .attr("y", function (d) { return y(d.value_start + d.value_end); })
+                .attr("width", x.bandwidth())
+                .attr("height", function (d) { return height - y(d.value_start + d.value_end); })
+                .attr("fill", color("end"))
                 // Add the tooltip events
                 .on("mouseover", function (event, d) {
                     tooltip.transition()
                         .duration(200)
                         .style("opacity", .9);
-                    tooltip.html("Station: " + d.station + "<br>Outgoing Trips: " + d.value_start)
+                    tooltip.html("Station: " + d.station + "<br>Outgoing Trips: " + d.value_start )
                         .style("left", (event.pageX) + "px")
                         .style("top", (event.pageY - 28) + "px");
                 })
@@ -134,9 +132,9 @@
                 .enter().append("rect")
                 .attr("x", function (d) { return x(d.station); })
                 .attr("y", function (d) { return y(d.value); })
-                .attr("width", x.bandwidth() / 2)
+                .attr("width", x.bandwidth())
                 .attr("height", function (d) { return height - y(d.value); })
-                .attr("fill", color("end"))
+                .attr("fill", color("start"))
                 // Add the tooltip events
                 .on("mouseover", function (event, d) {
                     tooltip.transition()
@@ -170,7 +168,7 @@
                 .attr("y", 9)
                 .attr("dy", ".35em")
                 .style("text-anchor", "start")
-                .text(function (d) { return d === "start" ? "Outgoing":"Incoming" ; });
+                .text(function (d) { return d === "start" ?   "Incoming":"Outgoing"; });
 
         });
     </script>
