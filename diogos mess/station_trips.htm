@@ -33,16 +33,32 @@
         // set the dimensions and margins of the graph
         var margin = { top: 10, right: 30, bottom: 200, left: 50 },
             width = 1460 - margin.left - margin.right,
+            totalWidth = 3 * width,
             height = 900 - margin.top - margin.bottom;
 
+        var scrollable_div = d3.select("#my_dataviz").append("div")
+                .style("overflow-x", "scroll")
+                .style("-webkit-overflow-scrolling", "touch")
+                .style("position", "absolute")
+                .style("z-index", 1)
+                .style("width", width + "px")
+                .style("height", (height + margin.bottom + margin.top) + "px")
+                .style("left", "60px");
+
+        var scrollable_div_svg = scrollable_div.append("svg")
+                .attr("width", totalWidth)
+                .attr("height", height + margin.bottom + margin.top)
+                .style("display", "block");
+
         // append the svg object to the body of the page
-        var svg = d3.select("#my_dataviz")
+        var outer_svg = d3.select("#my_dataviz")
             .append("svg")
             .attr("width", width + margin.left + margin.right)
             .attr("height", height + margin.top + margin.bottom)
+            .style("top", "0px")
             .append("g")
             .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-
+            
         // Append the tooltip div to the body
         var tooltip = d3.select("body")
             .append("div")
@@ -50,7 +66,7 @@
             .style("opacity", 0);
 
         // Load the data
-        d3.csv("trip.csv").then(function (data) {
+        d3.csv("../data/trip.csv").then(function (data) {
 
             // Data processing for outgoing trips
             var start_station_counts = {};
@@ -72,13 +88,13 @@
             // Add X axis
             var x = d3.scaleBand()
                 .domain(allStations)
-                .range([0, width])
+                .range([0, totalWidth])
                 .padding([0.2]);
 
-            svg.append("g")
-                .attr("transform", "translate(0," + height + ")")
+            scrollable_div_svg.append("g")
+                .attr("transform", "translate(0," + (height + margin.top) + ")")
                 .call(d3.axisBottom(x).tickSize(0)).selectAll("text")
-                .attr("transform", "translate(-10,0)rotate(-45)")
+                .attr("transform", "translate(0,5)rotate(-90)")
                 .style("text-anchor", "end");
 
             // Add Y axis
@@ -86,7 +102,7 @@
                 .domain([0, d3.max(Object.values(start_station_counts).concat(Object.values(end_station_counts)))])
                 .range([height, 0]);
 
-            svg.append("g")
+            outer_svg.append("g")
                 .call(d3.axisLeft(y));
 
             // Color palette
@@ -95,7 +111,7 @@
                 .range(['#e41a1c', '#377eb8']);
 
             // Show the bars for outgoing trips
-            svg.append("g")
+            scrollable_div_svg.append("g")
                 .selectAll("rect")
                 .data(allStations.map(function (station) {
                     return {
@@ -106,7 +122,7 @@
                 }))
                 .enter().append("rect")
                 .attr("x", function (d) { return x(d.station) - x.bandwidth() / 2; })
-                .attr("y", function (d) { return y(d.value_start); })
+                .attr("y", function (d) { return y(d.value_start) + margin.top; })
                 .attr("width", x.bandwidth() / 2)
                 .attr("height", function (d) { return height - y(d.value_start); })
                 .attr("fill", color("start"))
@@ -126,14 +142,14 @@
                 });
 
             // Show the bars for incoming trips
-            svg.append("g")
+            scrollable_div_svg.append("g")
                 .selectAll("rect")
                 .data(allStations.map(function (station) {
                     return { station: station, value: end_station_counts[station] || 0, type: "end" };
                 }))
                 .enter().append("rect")
                 .attr("x", function (d) { return x(d.station); })
-                .attr("y", function (d) { return y(d.value); })
+                .attr("y", function (d) { return y(d.value) + margin.top; })
                 .attr("width", x.bandwidth() / 2)
                 .attr("height", function (d) { return height - y(d.value); })
                 .attr("fill", color("end"))
@@ -153,7 +169,7 @@
                 });
 
             // Add Legend
-            var legend = svg.append("g")
+            var legend = outer_svg.append("g")
                 .attr("transform", "translate(" + (width - 100) + "," + 20 + ")")
                 .selectAll("g")
                 .data(color.domain().slice().reverse())
@@ -170,8 +186,9 @@
                 .attr("y", 9)
                 .attr("dy", ".35em")
                 .style("text-anchor", "start")
-                .text(function (d) { return d === "start" ? "Outgoing":"Incoming" ; });
-
+                .text(function (d) { return d === "start" ? "Outgoing":"Incoming"; });
+            
+            scrollable_div.node().scrollBy(totalWidth, 0);
         });
     </script>
 
