@@ -1,3 +1,8 @@
+:root {
+    --filter-accent: #0CA789;
+    --filter-background: #a0a0a0;
+}
+
 #nav {
     position: absolute;
     width: 100%;
@@ -7,6 +12,7 @@
     padding-top: 56px;
 }
 
+/* Filters */
 #filters {
     top: 87%;
     left: 15%;
@@ -17,7 +23,7 @@
     justify-content: space-around;
 }
 
-#filters > div {
+#filters>div {
     display: inline-block;
 }
 
@@ -25,7 +31,7 @@
     position: relative;
 }
 
-.filter-group > div {
+.filter-group>div {
     display: inline-block;
 }
 
@@ -37,7 +43,7 @@
     background-color: lightgray;
 }
 
-.slider-3-toggle > div {
+.slider-3-toggle>div {
     position: absolute;
 }
 
@@ -48,7 +54,7 @@
     height: 10px;
     width: 10px;
     border-radius: 50%;
-    background-color: #a0a0a0;
+    background-color: var(--filter-background);
 }
 
 .slider-3-toggle-circle {
@@ -58,7 +64,7 @@
     height: 40px;
     width: 40px;
     border-radius: 50%;
-    background-color: #0CA789;
+    background-color: var(--filter-accent);
 }
 
 .slider-3-toggle-clickable-areas {
@@ -77,12 +83,14 @@
     cursor: pointer;
     z-index: 100;
 }
+
 .slider-3-toggle-clickable-area-1 {
     /* background-color: blue; */
     grid-area: 1 / 2 / 2 / 3;
     cursor: pointer;
     z-index: 100;
 }
+
 .slider-3-toggle-clickable-area-2 {
     /* background-color: green; */
     grid-area: 1 / 3 / 2 / 4;
@@ -90,6 +98,13 @@
     z-index: 100;
 }
 
+/* Glow which will appear when hovering a filter and highlight the visualizations that are affected by it */
+.filter-dependent-glow {
+    box-shadow: 0px 0px 25px var(--filter-accent);
+    transition: 0.5s;
+}
+
+/* Visualization grid layouts */
 .vis3-grid {
     display: grid;
     grid-template-columns: 2fr 1fr;
