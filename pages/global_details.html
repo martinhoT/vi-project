@@ -97,6 +97,29 @@
         // const dataUpdateEvent = new CustomEvent('data-update', {detail: ...});
 
         // JS
+        // Set filters' default values and get the filters' values if passed on the URL
+        // The null dates will be set when the data is obtained and extents are extracted
+        let filter = {
+            cityTraversal: 0,
+            clientType: 0,
+            timeStart: null,
+            timeEnd: null,
+        }
+        for (const [key, value] of currentURL.searchParams) {
+            let parsedValue = null;
+
+            // Number
+            if (["cityTraversal", "clientType"].includes(key))
+                parsedValue = +value;
+
+            // Date
+            else if (["timeStart", "timeEnd"].includes(key))
+                parsedValue = new Date(+value);
+
+            if (parsedValue != null)
+                filter[key] = parsedValue
+        }
+
         const changeSlider3ToggleState = function(filterId, state) {
             let left_position = 5 + 35 * state;
             // TODO: animation
@@ -368,13 +391,11 @@
             console.log("Date extents obtained")
 
             let dateExtent = [dateStartExtent[0], dateEndExtent[1]];
-
-            let filter = {
-                cityTraversal: 0,
-                clientType: 0,
-                timeStart: dateExtent[0],
-                timeEnd: dateExtent[1],
-            }
+            
+            if (filter.timeStart == null)
+                filter.timeStart = dateExtent[0];
+            if (filter.timeEnd == null)
+                filter.timeEnd = dateExtent[1];
 
             function filterDataByCityTraversal(filterType) {
                 if (filter.cityTraversal == filterType)
@@ -428,11 +449,9 @@
             }
 
             console.log("Preparing filters...");
-            // Default filter state
-            // TODO: if we want to persist filter state between pages, this has to change
-            for (let filter of sliderFilters) {
-                changeSlider3ToggleState(filter, 0);
-            }
+            // Initial filter state
+            changeSlider3ToggleState("#filter-city-traversal", filter.cityTraversal)
+            changeSlider3ToggleState("#filter-client-type", filter.clientType)
 
             // Bind callbacks
             d3.select("#filter-city-traversal").on("data-update", function () {
