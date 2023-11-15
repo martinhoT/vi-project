@@ -97,6 +97,29 @@
         // const dataUpdateEvent = new CustomEvent('data-update', {detail: ...});
 
         // JS
+        // Set filters' default values and get the filters' values if passed on the URL
+        // The null dates will be set when the data is obtained and extents are extracted
+        let filter = {
+            cityTraversal: 0,
+            clientType: 0,
+            timeStart: null,
+            timeEnd: null,
+        }
+        for (const [key, value] of currentURL.searchParams) {
+            let parsedValue = null;
+
+            // Number
+            if (["cityTraversal", "clientType"].includes(key))
+                parsedValue = +value;
+
+            // Date
+            else if (["timeStart", "timeEnd"].includes(key))
+                parsedValue = new Date(+value);
+
+            if (parsedValue != null)
+                filter[key] = parsedValue
+        }
+
         const changeSlider3ToggleState = function(filterId, state) {
             let left_position = 5 + 35 * state;
             // TODO: animation
@@ -125,6 +148,8 @@
         }
 
         const sliderFilters = ["#filter-city-traversal", "#filter-client-type"];
+        const filter_city_traversal_dependents = ["#content-traffic", "#content-client-total-trips", "#content-client-length-trips"];
+        const filter_client_type_dependents = ["#content-traffic"];
 
         $(document).ready(function() {
             $("#filters").show();
@@ -366,13 +391,11 @@
             console.log("Date extents obtained")
 
             let dateExtent = [dateStartExtent[0], dateEndExtent[1]];
-
-            let filter = {
-                cityTraversal: 0,
-                clientType: 0,
-                timeStart: dateExtent[0],
-                timeEnd: dateExtent[1],
-            }
+            
+            if (filter.timeStart == null)
+                filter.timeStart = dateExtent[0];
+            if (filter.timeEnd == null)
+                filter.timeEnd = dateExtent[1];
 
             function filterDataByCityTraversal(filterType) {
                 if (filter.cityTraversal == filterType)
@@ -420,24 +443,54 @@
                 });
                 console.log("Data filtered");
 
-                for (callback of data_draw_callbacks) {
+                for (let callback of data_draw_callbacks) {
                     callback(dataFiltered);
                 }
             }
 
             console.log("Preparing filters...");
-            // Default filter state
-            // TODO: if we want to persist filter state between pages, this has to change
-            for (let filter of sliderFilters) {
-                changeSlider3ToggleState(filter, 0);
-            }
+            // Initial filter state
+            changeSlider3ToggleState("#filter-city-traversal", filter.cityTraversal)
+            changeSlider3ToggleState("#filter-client-type", filter.clientType)
 
             // Bind callbacks
             d3.select("#filter-city-traversal").on("data-update", function () {
                 filterDataByCityTraversal(this.value)
             });
+            d3.select("#filter-city-traversal").on("mouseenter", function() {
+                for (let dependent of filter_city_traversal_dependents) {
+                    d3.select(dependent)
+                        .transition()
+                        .duration(500)
+                        .style("box-shadow", "0px 0px 25px var(--filter-accent)");
+                }
+            });
+            d3.select("#filter-city-traversal").on("mouseleave", function() {
+                for (let dependent of filter_city_traversal_dependents) {
+                    d3.select(dependent)
+                        .transition()
+                        .duration(500)
+                        .style("box-shadow", "0px 0px 0px var(--filter-accent)");
+                }
+            });
             d3.select("#filter-client-type").on("data-update", function () {
                 filterDataByClientType(this.value)
+            });
+            d3.select("#filter-client-type").on("mouseenter", function() {
+                for (let dependent of filter_client_type_dependents) {
+                    d3.select(dependent)
+                        .transition()
+                        .duration(500)
+                        .style("box-shadow", "0px 0px 25px var(--filter-accent)");
+                }
+            });
+            d3.select("#filter-client-type").on("mouseleave", function() {
+                for (let dependent of filter_client_type_dependents) {
+                    d3.select(dependent)
+                        .transition()
+                        .duration(500)
+                        .style("box-shadow", "0px 0px 0px var(--filter-accent)");
+                }
             });
             let timeSliderBrush = addTimeSlider(filter.timeStart, filter.timeEnd, dateExtent, filterDataByTime);
             console.log("Filters prepared");
