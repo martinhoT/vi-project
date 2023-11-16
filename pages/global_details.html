@@ -160,6 +160,7 @@
         const sliderFilters = ["#filter-city-traversal", "#filter-client-type"];
         const filter_city_traversal_dependents = ["#content-traffic", "#content-client-total-trips", "#content-client-length-trips"];
         const filter_client_type_dependents = ["#content-traffic"];
+        const filter_time_dependents = ["#content-traffic", "#content-client-total-trips", "#content-client-length-trips", "#content-bike-usage"];
 
         $(document).ready(function() {
             $("#filters").show();
@@ -525,37 +526,39 @@
                 filter.timeEnd = dateExtent[1];
 
             // Highlight graphs that are affected by the filter
-            d3.select("#filter-city-traversal").on("mouseenter", function() {
-                for (let dependent of filter_city_traversal_dependents) {
-                    d3.select(dependent)
+            function highlight_start(elements) {
+                for (let element of elements) {
+                    d3.select(element)
                         .transition()
                         .duration(500)
                         .style("box-shadow", "0px 0px 25px var(--filter-accent)");
                 }
+            }
+            function highlight_stop(elements) {
+                for (let element of elements) {
+                    d3.select(element)
+                        .transition()
+                        .duration(500)
+                        .style("box-shadow", "0px 0px 0px var(--filter-accent)");
+                }
+            }
+            d3.select("#filter-city-traversal").on("mouseenter", function() {
+                highlight_start(filter_city_traversal_dependents);
             });
             d3.select("#filter-city-traversal").on("mouseleave", function() {
-                for (let dependent of filter_city_traversal_dependents) {
-                    d3.select(dependent)
-                        .transition()
-                        .duration(500)
-                        .style("box-shadow", "0px 0px 0px var(--filter-accent)");
-                }
+                highlight_stop(filter_city_traversal_dependents);
             });
             d3.select("#filter-client-type").on("mouseenter", function() {
-                for (let dependent of filter_client_type_dependents) {
-                    d3.select(dependent)
-                        .transition()
-                        .duration(500)
-                        .style("box-shadow", "0px 0px 25px var(--filter-accent)");
-                }
+                highlight_start(filter_client_type_dependents);
             });
             d3.select("#filter-client-type").on("mouseleave", function() {
-                for (let dependent of filter_client_type_dependents) {
-                    d3.select(dependent)
-                        .transition()
-                        .duration(500)
-                        .style("box-shadow", "0px 0px 0px var(--filter-accent)");
-                }
+                highlight_stop(filter_client_type_dependents);
+            });
+            d3.select("#filter-time").on("mouseenter", function() {
+                highlight_start(filter_time_dependents);
+            });
+            d3.select("#filter-time").on("mouseleave", function() {
+                highlight_stop(filter_time_dependents);
             });
 
             console.log("Preparing filters...");
