@@ -1,17 +1,3 @@
-const currentURL = new URL(window.location);
-
-$.get("bases/nav.html", function(data) {
-    $("#nav").replaceWith(data);
-    
-    $("#nav").ready(function() {
-        for (const loc of ["intro", "geo", "cs-details", "global-details", "insights", "about"]) {
-            $("#nav-" + loc).on("click", function() {
-                window.location.assign(loc.replace("-", "_") + ".html" + currentURL.search);
-            });
-        }
-    })
-});
-
 // Set filters' default values and get the filters' values if passed on the URL
 // The null dates will be set when the data is obtained and extents are extracted
 // Whenever the filters change, dispatch the custom event 'data-update' with the appropriate details.
@@ -22,6 +8,26 @@ const filter = {
     timeStart: null,
     timeEnd: null
 }        
+
+// Save a reference to the current URL
+const currentURL = new URL(window.location);
+
+// Initialize the navigation bar
+$.get("bases/nav.html", function(data) {
+    $("#nav").replaceWith(data);
+    
+    $("#nav").ready(function() {
+        for (const loc of ["intro", "geo", "cs-details", "global-details", "insights", "about"]) {
+            $("#nav-" + loc).on("click", function() {
+                currentURL.searchParams.set("cityTraversal", filter.cityTraversal);
+                currentURL.searchParams.set("clientType", filter.clientType);
+                currentURL.searchParams.set("timeStart", filter.timeStart.getTime());
+                currentURL.searchParams.set("timeEnd", filter.timeEnd.getTime());
+                window.location.assign(loc.replace("-", "_") + ".html" + currentURL.search);
+            });
+        }
+    })
+});
 
 for (const [key, value] of currentURL.searchParams) {
     let parsedValue = null;
