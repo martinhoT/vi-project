@@ -50,205 +50,12 @@
         </div>
     </div>
 
-    <div id="filters">
-        <div id="filter-city-traversal" class="filter-group">
-            <div class="filter-label-left">Within <br> cities</div>
-            <div class="slider-3-toggle">
-                <div class="slider-3-toggle-middle-indicator"></div>
-    
-                <div class="slider-3-toggle-circle"></div>
-    
-                <div class="slider-3-toggle-clickable-areas">
-                    <div class="slider-3-toggle-clickable-area-0"></div>
-                    <div class="slider-3-toggle-clickable-area-1"></div>
-                    <div class="slider-3-toggle-clickable-area-2"></div>
-                </div>
-            </div>
-            <div class="filter-label-right">Between <br> cities</div>
-        </div>
-
-        <div id="filter-client-type" class="filter-group">
-            <div class="filter-label-left">Customer</div>
-            <div class="slider-3-toggle">
-                <div class="slider-3-toggle-middle-indicator"></div>
-    
-                <div class="slider-3-toggle-circle"></div>
-    
-                <div class="slider-3-toggle-clickable-areas">
-                    <div class="slider-3-toggle-clickable-area-0"></div>
-                    <div class="slider-3-toggle-clickable-area-1"></div>
-                    <div class="slider-3-toggle-clickable-area-2"></div>
-                </div>
-            </div>
-            <div class="filter-label-right">Subscriber</div>
-        </div>
-
-        <div id="filter-time">
-        </div>
-    </div>
+    <div id="filters"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
     <script src="http://d3js.org/d3.v6.js"></script>
     <script src="base.js"></script>
     <script>
-
-        // Whenever the filters change, dispatch the custom event 'data-update' with the appropriate details.
-        // D3 will listen for these events
-        // const dataUpdateEvent = new CustomEvent('data-update', {detail: ...});
-
-        // JS
-        // Set filters' default values and get the filters' values if passed on the URL
-        // The null dates will be set when the data is obtained and extents are extracted
-        const filter = {
-            cityTraversal: 0,
-            clientType: 0,
-            timeStart: null,
-            timeEnd: null
-        }
-        for (const [key, value] of currentURL.searchParams) {
-            let parsedValue = null;
-
-            // Number
-            if (["cityTraversal", "clientType"].includes(key))
-                parsedValue = +value;
-
-            // Date
-            else if (["timeStart", "timeEnd"].includes(key))
-                parsedValue = new Date(+value);
-
-            if (parsedValue != null)
-                filter[key] = parsedValue
-        }
-
-        const changeSlider3ToggleState = function(filterId, state) {
-            let left_position = 5 + 35 * state;
-            // TODO: animation
-            $(filterId).children(".slider-3-toggle").children(".slider-3-toggle-circle").css("left", left_position + "px");
-
-            // Change the labels' color
-            if (state <= 1) {
-                $(filterId).children(".filter-label-left").css("color", "#0CA789");
-            }
-            else {
-                $(filterId).children(".filter-label-left").css("color", "#000000");
-            }
-
-            if (state >= 1) {
-                $(filterId).children(".filter-label-right").css("color", "#0CA789");
-            }
-            else {
-                $(filterId).children(".filter-label-right").css("color", "#000000");
-            }
-            
-            let filterElem = document.getElementById(filterId.slice(1));
-            let changed = filterElem.value != state;
-            filterElem.value = state;
-            if (changed) {
-                if (filterId == "#filter-city-traversal") {
-                    filter.cityTraversal = state;
-                    console.log("Filter by city traversal");
-                }
-                else if (filterId == "#filter-client-type") {
-                    filter.clientType = state;
-                    console.log("Filter by client type");
-                }
-
-                document.getElementById("content").dispatchEvent(new Event('data-update'));
-            }
-        }
-
-        const sliderFilters = ["#filter-city-traversal", "#filter-client-type"];
-        const filter_city_traversal_dependents = ["#content-traffic", "#content-client-total-trips", "#content-client-length-trips"];
-        const filter_client_type_dependents = ["#content-traffic"];
-        const filter_time_dependents = ["#content-traffic", "#content-client-total-trips", "#content-client-length-trips", "#content-bike-usage"];
-
-        $(document).ready(function() {
-            $("#filters").show();
-
-            for (let filter of sliderFilters) {
-                for (let i = 0; i < 3; i++) {
-                    $(filter).children(".slider-3-toggle").children(".slider-3-toggle-clickable-areas").children(".slider-3-toggle-clickable-area-" + i).on("click", function() {
-                        changeSlider3ToggleState(filter, i);
-                    })
-                }
-            }
-        });
-
-        // D3
-
-        // TODO: on brush single-click it disappears, let it stay?
-        function addTimeSlider(initialLeft, initialRight, domain) {
-            const timeSliderWidth = 200
-            const timeSliderHeight = 20
-            const timeSliderLabelWidth = 100
-
-            let timeFilterSvg = d3.select('#filter-time').append('svg')
-                .attr('width', timeSliderWidth + timeSliderLabelWidth * 2)
-                .attr('height', timeSliderHeight)
-
-            const timeSlider = timeFilterSvg.append('g')
-
-            let x = d3.scaleLinear()
-                .domain(domain)
-                .range([0, timeSliderWidth])
-
-            timeSlider.selectAll('text')
-                .data([[0, 15], [timeSliderWidth + timeSliderLabelWidth, 15]])
-                .join('text')
-                    .text('A')
-                    .attr('x', (d) => d[0])
-                    .attr('y', (d) => d[1])
-
-            var brush = d3.brushX()
-                .extent([[0, 0], [timeSliderWidth, timeSliderHeight]])
-                .on('brush', brushed)
-                .on('end', brushEnded)
-
-            var brushGroup = timeFilterSvg.append('g')
-                .attr('class', 'brush')
-                .attr('transform', 'translate(' + timeSliderLabelWidth + ',' + 0 + ')')
-                .call(brush)
-            
-            function brushed(event) {
-                // Alternative: let selection = event.selection
-                let selection = d3.brushSelection(this)
-                if (selection == null)
-                    return
-
-                let range = selection.map(x.invert)
-                
-                timeSlider.selectAll("text")
-                    .text(function(d, i) {
-                        let date = new Date(range[i]);
-                        return `${date.getUTCDate()}/${date.getUTCMonth() + 1}/${date.getUTCFullYear()}`
-                    })
-                
-                // NOTE: comment if update every brush action is too heavy, and use brushEnded instead
-                // callback(range[0], range[1])
-            }
-
-            function brushEnded() {
-                let selection = d3.brushSelection(this)
-                if (selection == null)
-                    return
-
-                let range = selection.map(x.invert)
-
-                if (filter.timeStart.getTime() == range[0] && filter.timeEnd.getTime() == range[1])
-                    return;
-
-                filter.timeStart = new Date(range[0]);
-                filter.timeEnd = new Date(range[1]);
-                console.log("Filter by time");
-
-                document.getElementById("content").dispatchEvent(new Event('data-update'));
-            }
-
-            brush.move(brushGroup, [initialLeft, initialRight].map(x));
-
-            return brush
-        }
-
         function visTraffic(metadata) {
             // Set the dimensions and margins of the graph
             const margin = {top: 10, right: 30, bottom: 200, left: 50};
@@ -313,21 +120,14 @@
                         console.log("ERROR: invalid class for traffic visualization")
                 }
             });
-            // TODO: how do we sort the X-axis? it's not bound to the data
-            // TODO: sort by the default option on load
-            d3.select("#content-traffic-sort").on("change", function() {
-                let sort_type = this.value;
-                let sort_ascending = d3.select("#content-traffic-sort-asc").property("checked");
+
+            function sortContent(sort_type, sort_ascending) {
                 let sorted = undefined;
 
                 switch (sort_type) {
                     case "alphabetic":
                         sorted = station_scrollable_div_svg.selectAll("g.g-out").selectAll("rect")
-                            // .sort((a, b) => sort_ascending ? d3.ascending(a.station, b.station) : d3.descending(a.station, b.station));
-                            .sort((a, b) => {
-                                console.log(a.station);
-                                return sort_ascending ? d3.ascending(a.station, b.station) : d3.descending(a.station, b.station)
-                            });
+                            .sort((a, b) => sort_ascending ? d3.ascending(a.station, b.station) : d3.descending(a.station, b.station));
                         break;
                     
                     case "total_trips":
@@ -355,7 +155,13 @@
                 //     .attr("x", (d, i) => x(d.station) + x.bandwidth() / 2);
                 sorted
                     .transition()
+                    // TODO: how do I do this?
                     .attr("x", (d, i) => i);
+            }
+
+            // TODO: how do we sort the X-axis? it's not bound to the data
+            d3.select("#content-traffic-sort").on("change", function() {
+                sortContent(this.value, d3.select("#content-traffic-sort-asc").property("checked"));
             });
 
             return (data) => {
@@ -395,8 +201,6 @@
                 const color = d3.scaleOrdinal()
                     .domain(["start", "end"])
                     .range(['#e41a1c', '#377eb8']);
-
-                debugger;
 
                 // Show the bars for outgoing trips
                 station_scrollable_div_svg.append("g")
@@ -442,7 +246,10 @@
                     .style("text-anchor", "start")
                     .text(function(d) { return d === "start" ? "Outgoing" : "Incoming"; });
 
-                station_scrollable_div.node().scrollBy(totalWidth, 0);
+                // Default sort
+                sortContent("alphabetic", true);
+                
+                station_scrollable_div.node().scrollBy(0, 0);
             };
         }
 
@@ -585,59 +392,8 @@
             return () => null;
         }
 
-        // TODO: possible performance optimization: (pre-)sort trip data by date. With this, we don't need to filter, we can just use indexOf() and get the indices of the initial and end dates, and finally take the interval in between those indices (hint: use d3.bisector!)
         function setupVisualizations(metadata) {
-            const dateParser = d3.utcParse("%Y-%-m-%-d");
-            let dateExtent = [dateParser(metadata["date_min"]), dateParser(metadata["date_max"])];
             
-            if (filter.timeStart == null)
-                filter.timeStart = dateExtent[0];
-            if (filter.timeEnd == null)
-                filter.timeEnd = dateExtent[1];
-
-            // Highlight graphs that are affected by the filter
-            function highlight_start(elements) {
-                for (let element of elements) {
-                    d3.select(element)
-                        .transition()
-                        .duration(500)
-                        .style("box-shadow", "0px 0px 25px var(--filter-accent)");
-                }
-            }
-            function highlight_stop(elements) {
-                for (let element of elements) {
-                    d3.select(element)
-                        .transition()
-                        .duration(500)
-                        .style("box-shadow", "0px 0px 0px var(--filter-accent)");
-                }
-            }
-            d3.select("#filter-city-traversal").on("mouseenter", function() {
-                highlight_start(filter_city_traversal_dependents);
-            });
-            d3.select("#filter-city-traversal").on("mouseleave", function() {
-                highlight_stop(filter_city_traversal_dependents);
-            });
-            d3.select("#filter-client-type").on("mouseenter", function() {
-                highlight_start(filter_client_type_dependents);
-            });
-            d3.select("#filter-client-type").on("mouseleave", function() {
-                highlight_stop(filter_client_type_dependents);
-            });
-            d3.select("#filter-time").on("mouseenter", function() {
-                highlight_start(filter_time_dependents);
-            });
-            d3.select("#filter-time").on("mouseleave", function() {
-                highlight_stop(filter_time_dependents);
-            });
-
-            console.log("Preparing filters...");
-            // Initial filter state
-            changeSlider3ToggleState("#filter-city-traversal", filter.cityTraversal)
-            changeSlider3ToggleState("#filter-client-type", filter.clientType)
-
-            let timeSliderBrush = addTimeSlider(filter.timeStart, filter.timeEnd, dateExtent);
-            console.log("Filters prepared");
         }
 
         // Trip data
@@ -688,9 +444,14 @@
 
         trip_small_data = d3.csv("../data/trip_small.csv");
 
+        // TODO: possible performance optimization: (pre-)sort trip data by date. With this, we don't need to filter, we can just use indexOf() and get the indices of the initial and end dates, and finally take the interval in between those indices (hint: use d3.bisector!)
         d3.json("../data/metadata.json")
             .then((metadata) => {
-                setupVisualizations(metadata);
+                setupFilters(metadata,
+                    ["#content-traffic", "#content-client-total-trips", "#content-client-length-trips"],
+                    ["#content-traffic", "#content-client-total-trips", "#content-client-length-trips"],  // NOTE: ideally the client-* graphs shouldn't be here, but it complicates stuff too much otherwise...
+                    ["#content-traffic", "#content-client-total-trips", "#content-client-length-trips", "#content-bike-usage"]
+                );
 
                 const trip_data_draw_callbacks = [
                     // visBikeUsage(),
