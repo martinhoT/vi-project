@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bike Share in San Francisco Bay Area</title>
+</head>
+<body>
+    <div id="nav"></div>
+
+    <div id="content">
+
+    </div>
+
+    <div id="filters"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+    <script src="http://d3js.org/d3.v6.js"></script>
+    <script src="base.js"></script>
+    <script>
+
+        function setupMap(geo) {
+            console.log("Loaded map data");
+
+            const width = 900;
+            const height = 500;
+
+            const projection = d3.geoMercator()
+                .fitSize([width, height], geo);
+
+            const path = d3.geoPath()
+                .projection(projection);
+
+    //             94107: "San Francisco",
+    // 94063: "Redwood City",
+    // 94301: "Palo Alto",
+    // 94041: "Mountain View",
+    // 95113: "San Jose",
+
+            const svg = d3.select("#content")
+                .append("svg")
+                .classed("geo", true)
+                .attr("width", width)
+                .attr("height", height);
+
+            svg.append("path")
+                .datum(geo)
+                .attr("d", path)
+                .attr("fill", "none")
+                .attr("stroke", "black")
+                .attr("stroke-width", 1);
+            
+            return projection;
+        }
+
+        function visTripVectors(metadata, projection) {
+            return () => {};
+        }
+
+        function visStationAvailability(metadata, projection) {
+            return (data) => {
+                const svg = d3.select("#content").select("svg.geo");
+
+                const available_bikes = d3.rollup(data, (g) => d3.mean(g.map((v) => v.bikes_available_avg)), (d) => d.station_id);
+
+                svg.append("g")
+                    .selectAll("circle")
+                    .data(available_bikes.entries())
+                    .join("circle")
+                    .attr("cx", (d) => projection([metadata.stations[d[0]].long, metadata.stations[d[0]].lat])[0])
+                    .attr("cy", (d) => projection([metadata.stations[d[0]].long, metadata.stations[d[0]].lat])[1])
+                    .attr("r", (d) => d[1] * 1)
+            };
+        }
+
+        function drawStatusData(metadata, data, update_callbacks) {
+            console.log("Loaded status data");
+
+            // Convert the appropriate numeric data
+            for (const d of data) {
+                d["bikes_available_avg"] = +d["bikes_available_avg"];
+                d["docks_available_avg"] = +d["docks_available_avg"];
+            }
+
+            function updateData() {
+                console.log("Filtering status data...");
+
+                let dataFiltered = data.filter((d) => {
+                    return d.date >= filter.timeStart && d.end_date <= filter.timeEnd;
+                });
+
+                console.log("Status data filtered");
+                
+                update_callbacks.forEach((callback) => callback(data));
+            }
+
+            console.log("Initializing visualizations (trip data)");
+            // TODO: no need to update for all filters but time
+            d3.select("#content").on("data-update", updateData);
+            updateData();
+        }
+
+        function drawTripData(metadata, data, update_callbacks) {
+            console.log("Loaded trip data");
+
+            const dateParser = d3.utcParse("%Y-%-m-%-d");
+
+            for (const d of data) {
+                d["start_date"] = dateParser(d["start_date"]);
+                d["end_date"] = dateParser(d["end_date"]);
+                d["duration_avg"] = +d["duration_avg"];
+                d["total_trips"] = +d["total_trips"];
+            }
+
+            function updateData() {
+                console.log("Filtering data...");
+
+                // TODO: include city information on trips, only have station
+                const cityTraversalFilter0 = (d) => d.start_station_id == d.end_station_id;  // within cities
+                const cityTraversalFilter1 = (d) => true;  // both
+                const cityTraversalFilter2 = (d) => d.start_station_id != d.end_station_id;  // between cities
+
+                const clientTypeFilter0 = (d) => d.subscription_type == "Customer";  // customer
+                const clientTypeFilter1 = (d) => true;  // both
+                const clientTypeFilter2 = (d) => d.subscription_type == "Subscriber";  // subscriber
+
+                let cityTraversalFilter = (filter.cityTraversal == 0) ? cityTraversalFilter0 : ((filter.cityTraversal == 1) ? cityTraversalFilter1 : cityTraversalFilter2);
+                let clientTypeFilter = (filter.clientType == 0) ? clientTypeFilter0 : ((filter.clientType == 1) ? clientTypeFilter1 : clientTypeFilter2);
+
+                let dataFiltered = data.filter((d) => {
+                    return d.start_date >= filter.timeStart && d.end_date <= filter.timeEnd && cityTraversalFilter(d) && clientTypeFilter(d);
+                });
+
+                console.log("Data filtered");
+                
+                update_callbacks.forEach((callback) => callback(data));
+            }
+
+            console.log("Initializing visualizations (trip data)");
+            d3.select("#content").on("data-update", updateData);
+            updateData();
+        }
+
+        console.log("Loading data...");
+
+        metadata_data = d3.json("../data/metadata.json");
+        trip_small_data = d3.csv("../data/trip_small.csv");
+        status_small_data = d3.csv("../data/status_small.csv");
+
+        d3.json("../data/CA.geo.json")
+            .then((california_geo) => {
+                let projection = setupMap(california_geo);
+
+                metadata_data
+                    .then((metadata) => {
+                        setupFilters(metadata);
+        
+                        const trip_data_draw_callbacks = [
+                            visTripVectors(metadata, projection)
+                        ];
+        
+                        const status_data_draw_callbacks = [
+                            visStationAvailability(metadata, projection)
+                        ];
+        
+                        trip_small_data
+                            .then((data) => drawTripData(metadata, data, trip_data_draw_callbacks))
+                            .catch(function(err){console.log(err)});
+        
+                        status_small_data
+                            .then((data) => drawStatusData(metadata, data, status_data_draw_callbacks))
+                            .catch(function(err){console.log(err)});
+                    })
+                    .catch(function(err){console.log(err)});            
+            })
+            .catch(function(err){console.log(err)});
+
+
+    </script>
+</body>
+</html>
