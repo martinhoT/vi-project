@@ -15,7 +15,7 @@
     <div id="filters"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
-    <script src="http://d3js.org/d3.v6.js"></script>
+    <script src="https://d3js.org/d3.v7.js"></script>
     <script src="base.js"></script>
     <script>
 
@@ -24,13 +24,17 @@
             data_update_callbacks.forEach((callback) => callback());
         });
 
+        // Global variables that need to be shared across functions
+        let trip_vector_width_scale = undefined;
+        const pie_chart_radius = 20;
+
         function setupMap(geo) {
             console.log("Loaded map data");
 
             const svg = d3.select("#content")
                 .append("svg")
                 .attr("width", "100vw")
-                .attr("height", "100vh");
+                .attr("height", "calc(100vh - 56px)");
 
             const {width, height} = svg.node().getBoundingClientRect();
 
@@ -51,6 +55,7 @@
             
             map
                 .append("path")
+                .classed("geo-map", true)
                 .datum(geo)
                 .attr("d", path)
                 .attr("fill", "none")
@@ -65,11 +70,14 @@
             function zoomed(event) {
                 const {transform} = event;
                 map.attr("transform", `translate(${transform.x}, ${transform.y}) scale(${transform.k})`);
-                map.selectAll("path").attr("stroke-width", 1 / transform.k);
-                // Scale the pie charts according to the zoom transform
-                // map.selectAll("g.station-pie").attr("transform", (d) => `translate(${d[0].data.x + transform.x}, ${d[0].data.y + transform.y})`);
+                map.selectAll("path.geo-map").attr("stroke-width", 1 / transform.k);
+                // Scale the pie charts according to the zoom transform (inversely proportional to keep the same size), but with the same positioning
                 map.selectAll("g.station-pie").attr("transform", (d) => `translate(${d[0].data.x}, ${d[0].data.y}) scale(${1 / transform.k})`);
-                // map.selectAll("g.station-pie").attr("transform", (d) => d[1] / transform.k);
+
+                // Scale the vector widths according to the transform scale
+                if (trip_vector_width_scale !== undefined) {
+                    map.selectAll("g.trip-vectors path").attr("stroke-width", (d) => trip_vector_width_scale(d.total_trips) / transform.k);
+                }
             }
 
             svg.call(zoom);
@@ -78,10 +86,74 @@
         }
 
         function visTripVectors(metadata, projection) {
-            return () => {};
+            const map = d3.select("#content").select("g.geo");
+            const map_trip_vectors = map
+                .append("g")
+                .classed("trip-vectors", true);
+
+            // Define the connection vector arrowheads (markers)
+            d3.select("content")
+                .append("defs")
+                .append("marker")
+                .attr("id", "arrow")
+                .attr("viewBox", [0, 0, 10, 10])
+                .attr("refX", 5)
+                .attr("refY", 5)
+                .attr("markerWidth", 6)
+                .attr("markerHeight", 6)
+                .attr("orient", "auto-start-reverse")
+                .append("path")
+                .attr("d", d3.line()([0, 0], [10, 5], [0, 10]))
+                .attr("stroke", "black");
+            
+            return (data) => {
+
+                const total_trips = d3.flatRollup(data,
+                    (g) => {
+                        return d3.sum(g.map((v) => v.total_trips))
+                    },
+                    (d) => d.start_station_id,
+                    (d) => d.end_station_id
+                );
+
+                const trip_vectors = total_trips.map((d) => {
+                    const [sx, sy] = [metadata.stations[d[0]].long, metadata.stations[d[0]].lat];  // start
+                    const [ex, ey] = [metadata.stations[d[1]].long, metadata.stations[d[1]].lat];  // end
+                    const distance = Math.sqrt(Math.pow(ex - sx, 2) + Math.pow(ey - sy, 2));
+                    const angle = Math.atan2(ey - sy, ex - sx);
+                    const length_margin = pie_chart_radius * 1.2
+                    const vector_length = Math.max(distance - length_margin * 2, 0);
+                    return {
+                        sx: sx,// + length_margin * Math.cos(angle),
+                        sy: sy,// + length_margin * Math.sin(angle),
+                        ex: ex,// - length_margin * Math.cos(angle),
+                        ey: ey,// - length_margin * Math.sin(angle),
+                        total_trips: d[2]
+                    }
+                });
+
+                const connector_path = d3.geoPath()
+                    .projection(projection);
+
+                map_trip_vectors.selectAll("path")
+                    .data(trip_vectors)
+                    .join("path")
+                    .attr("d", (d) => {
+                        return connector_path({
+                            type: "LineString",
+                            coordinates: [[d.sx, d.sy], [d.ex, d.ey]]
+                        });
+                    })
+                    .attr("stroke", "black")
+                    .attr("stroke-width", (d) => trip_vector_width_scale(d.total_trips) / d3.zoomTransform(map.node()).k)
+                    .attr("marker-end", "url(#arrow)")
+                    .attr("fill", "none");
+            };
         }
 
         function visStationAvailability(metadata, projection) {
+            const map = d3.select("#content").select("g.geo");
+
             // Pie chart generator
             const pie = d3.pie()
                 .value((d) => d.value)
@@ -91,13 +163,7 @@
                 .domain(["bikes_available_avg", "docks_available_avg"])
                 .range(["#cee741", "#e36124"]);
 
-            const pie_chart_radius = 20;
-
             return (data) => {
-                console.log("Updating pie charts!");
-
-                const map = d3.select("#content").select("g.geo");
-
                 const available_bikes = d3.rollup(data, (g) => {
                     return {
                         bikes_available_avg: d3.mean(g.map((v) => v.bikes_available_avg)),
@@ -160,12 +226,6 @@
                         .endAngle(d[1].endAngle)()
                     )
                     .attr("fill", (d) => color(d[1].data.key))
-                        
-                    // .join("circle")
-                    // .attr("cx", (d) => projection([metadata.stations[d[0]].long, metadata.stations[d[0]].lat])[0])
-                    // .attr("cy", (d) => projection([metadata.stations[d[0]].long, metadata.stations[d[0]].lat])[1])
-                    // .attr("r", (d) => d[1])
-                    // .attr("fill", "red");
             };
         }
 
@@ -211,13 +271,28 @@
                 d["total_trips"] = +d["total_trips"];
             }
 
+            // Determine the extent of the number of total trips to initialize the trips' vector width scale
+            const total_trips = d3.flatRollup(data,
+                (g) => {
+                    return d3.sum(g.map((v) => v.total_trips))
+                },
+                (d) => d.start_station_id,
+                (d) => d.end_station_id
+            );
+
+            const total_trips_extent = d3.extent(total_trips.map((d) => d[2]));
+
+            trip_vector_width_scale = d3.scalePow()
+                .domain(total_trips_extent)
+                .range([0.15, 3])
+                .exponent(0.5);
+
             function updateData() {
                 console.log("Filtering data...");
 
-                // TODO: include city information on trips, only have station
-                const cityTraversalFilter0 = (d) => d.start_station_id == d.end_station_id;  // within cities
+                const cityTraversalFilter0 = (d) => metadata.stations[d.start_station_id].city == metadata.stations[d.end_station_id].city;  // within cities
                 const cityTraversalFilter1 = (d) => true;  // both
-                const cityTraversalFilter2 = (d) => d.start_station_id != d.end_station_id;  // between cities
+                const cityTraversalFilter2 = (d) => metadata.stations[d.start_station_id].city != metadata.stations[d.end_station_id].city;  // between cities
 
                 const clientTypeFilter0 = (d) => d.subscription_type == "Customer";  // customer
                 const clientTypeFilter1 = (d) => true;  // both
@@ -232,7 +307,7 @@
 
                 console.log("Data filtered");
                 
-                update_callbacks.forEach((callback) => callback(data));
+                update_callbacks.forEach((callback) => callback(dataFiltered));
             }
 
             console.log("Initializing visualizations (trip data)");
@@ -262,9 +337,9 @@
                             visStationAvailability(metadata, projection)
                         ];
         
-                        // trip_small_data
-                        //     .then((data) => drawTripData(metadata, data, trip_data_draw_callbacks))
-                        //     .catch(function(err){console.log(err)});
+                        trip_small_data
+                            .then((data) => drawTripData(metadata, data, trip_data_draw_callbacks))
+                            .catch(function(err){console.log(err)});
         
                         status_small_data
                             .then((data) => drawStatusData(metadata, data, status_data_draw_callbacks))

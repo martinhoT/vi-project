@@ -3,8 +3,8 @@
 // Whenever the filters change, dispatch the custom event 'data-update' with the appropriate details.
 // D3 code should listen for these events
 const filter = {
-    cityTraversal: 0,
-    clientType: 0,
+    cityTraversal: 1,
+    clientType: 1,
     timeStart: null,
     timeEnd: null
 }        
@@ -99,6 +99,7 @@ const changeSlider3ToggleState = function(filterId, state) {
 }
 
 // TODO: on brush single-click it disappears, let it stay?
+// TODO: add play button? seems like it would be useful for Vis1
 function addTimeSlider(initialLeft, initialRight, domain) {
     const timeSliderWidth = 200
     const timeSliderHeight = 20
