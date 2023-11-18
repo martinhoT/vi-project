@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bikes Over Time</title>
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+</head>
+<body>
+
+<!-- Container for the chart -->
+<div id="chart-container"></div>
+
+<script>
+   // Your data
+ // Your data
+d3.csv("../data/status_small.csv").then(function (data) {
+
+   // Parse the date
+   var parseDate = d3.timeParse("%d-%m-%y");
+
+   // Format the date
+   var formatDate = d3.timeFormat("%d-%m-%y");
+console.log(data)
+   // Format data
+   data.forEach(function(d) {
+       d.date = parseDate(d.date);
+       d.bikes_available_avg = +d.bikes_available_avg;
+   });
+
+   // Create an array of time and bikes
+   var timeAndBikes = data.map(function(d) {
+       return {
+           date: d.date,
+           bikes: d.bikes_available_avg
+       };
+   });
+
+   // Set up the dimensions of the chart
+   var margin = {top: 20, right: 20, bottom: 30, left: 50},
+       width = 600 - margin.left - margin.right,
+       height = 300 - margin.top - margin.bottom;
+
+   // Set up the scales
+   var x = d3.scaleTime().range([0, width]);
+   var y = d3.scaleLinear().range([height, 0]);
+
+   // Set up the line
+   var line = d3.line()
+       .x(function(d) { return x(d.date); })
+       .y(function(d) { return y(d.bikes); });
+
+   // Create the SVG container
+   var svg = d3.select("#chart-container").append("svg")
+       .attr("width", width + margin.left + margin.right)
+       .attr("height", height + margin.top + margin.bottom)
+       .append("g")
+       .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+   // Scale the range of the data
+   x.domain(d3.extent(timeAndBikes, function(d) { return d.date; }));
+   y.domain([0, d3.max(timeAndBikes, function(d) { return d.bikes; })]);
+
+   // Add the line path
+   svg.append("path")
+       .data([timeAndBikes])
+       .attr("class", "line")
+       .attr("d", line);
+
+   // Add the X Axis
+   svg.append("g")
+       .attr("transform", "translate(0," + height + ")")
+       .call(d3.axisBottom(x));
+
+   // Add the Y Axis
+   svg.append("g")
+       .call(d3.axisLeft(y));
+
+});
+
+</script>
+
+</body>
+</html>
