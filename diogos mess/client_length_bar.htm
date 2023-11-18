@@ -12,7 +12,7 @@
 
 
     // Use D3 to load the CSV file
-    d3.csv("trip.csv").then(function(data) {
+    d3.csv("../data/trip.csv").then(function(data) {
         // Convert duration strings to numbers
         data.forEach(function(d) {
             d.duration = +d.duration;
@@ -20,9 +20,6 @@
 
         // Group data by subscription type and sum the duration for each group
         const groupedData = d3.group(data, d => d.subscription_type);
-
-        // If you are using D3 version 6 or later, replace the above line with:
-        // const groupedData = d3.groupBy(data, d => d.subscription_type);
 
         // Calculate total duration for each subscription type
         const totalDurationBySubscription = new Map();

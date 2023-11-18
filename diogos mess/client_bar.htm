@@ -10,7 +10,7 @@
 
 <script>
     // Load the data from the CSV file
-    d3.csv("trip.csv").then(function(data) {
+    d3.csv("../data/trip.csv").then(function(data) {
         // Extract the subscription_type column
         var subscriptionTypes = data.map(function(d) {
             return d.subscription_type;

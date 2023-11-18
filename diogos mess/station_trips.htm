@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://d3js.org/d3.v6.min.js"></script>
-    <title>Stack Station trips</title>
+    <title>Grouped Station Trips</title>
     <!-- Add this div for the tooltip -->
     <div class="tooltip"></div>
     <!-- Create a div where the graph will take place -->
@@ -31,24 +31,24 @@
 
     <script>
         // set the dimensions and margins of the graph
-        var margin = { top: 10, right: 30, bottom: 200, left: 50 },
+        var margin = { top: 30, right: 30, bottom: 200, left: 70 },
             width = 1460 - margin.left - margin.right,
             totalWidth = 3 * width,
             height = 900 - margin.top - margin.bottom;
 
         var scrollable_div = d3.select("#my_dataviz").append("div")
-                .style("overflow-x", "scroll")
-                .style("-webkit-overflow-scrolling", "touch")
-                .style("position", "absolute")
-                .style("z-index", 1)
-                .style("width", width + "px")
-                .style("height", (height + margin.bottom + margin.top) + "px")
-                .style("left", "60px");
+            .style("overflow-x", "scroll")
+            .style("-webkit-overflow-scrolling", "touch")
+            .style("position", "absolute")
+            .style("z-index", 1)
+            .style("width", width + "px")
+            .style("height", (height + margin.bottom + margin.top) + "px")
+            .style("left", "60px");
 
         var scrollable_div_svg = scrollable_div.append("svg")
-                .attr("width", totalWidth)
-                .attr("height", height + margin.bottom + margin.top)
-                .style("display", "block");
+            .attr("width", totalWidth)
+            .attr("height", height + margin.bottom + margin.top)
+            .style("display", "block");
 
         // append the svg object to the body of the page
         var outer_svg = d3.select("#my_dataviz")
@@ -58,12 +58,8 @@
             .style("top", "0px")
             .append("g")
             .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-            
-        // Append the tooltip div to the body
-        var tooltip = d3.select("body")
-            .append("div")
-            .attr("class", "tooltip")
-            .style("opacity", 0);
+
+
 
         // Load the data
         d3.csv("../data/trip.csv").then(function (data) {
@@ -78,7 +74,7 @@
             var end_station_counts = {};
             data.forEach(function (d) {
                 end_station_counts[d.end_station_name] = (end_station_counts[d.end_station_name] || 0) + 1;
-            
+
             });
 
 
@@ -110,6 +106,8 @@
                 .domain(["start", "end"])
                 .range(['#e41a1c', '#377eb8']);
 
+            var shift = 29; // Shift for horizontal alignment of bars
+
             // Show the bars for outgoing trips
             scrollable_div_svg.append("g")
                 .selectAll("rect")
@@ -121,7 +119,7 @@
                     };
                 }))
                 .enter().append("rect")
-                .attr("x", function (d) { return x(d.station) - x.bandwidth() / 2; })
+                .attr("x", function (d) { return shift + x(d.station) - x.bandwidth() / 2; })
                 .attr("y", function (d) { return y(d.value_start) + margin.top; })
                 .attr("width", x.bandwidth() / 2)
                 .attr("height", function (d) { return height - y(d.value_start); })
@@ -148,7 +146,7 @@
                     return { station: station, value: end_station_counts[station] || 0, type: "end" };
                 }))
                 .enter().append("rect")
-                .attr("x", function (d) { return x(d.station); })
+                .attr("x", function (d) { return shift + x(d.station); })
                 .attr("y", function (d) { return y(d.value) + margin.top; })
                 .attr("width", x.bandwidth() / 2)
                 .attr("height", function (d) { return height - y(d.value); })
@@ -170,7 +168,7 @@
 
             // Add Legend
             var legend = outer_svg.append("g")
-                .attr("transform", "translate(" + (width - 100) + "," + 20 + ")")
+                .attr("transform", "translate(" + (width - 150) + "," + 20 + ")")
                 .selectAll("g")
                 .data(color.domain().slice().reverse())
                 .enter().append("g")
@@ -186,8 +184,41 @@
                 .attr("y", 9)
                 .attr("dy", ".35em")
                 .style("text-anchor", "start")
-                .text(function (d) { return d === "start" ? "Outgoing":"Incoming"; });
-            
+                .text(function (d) { return d === "start" ? "Outgoing" : "Incoming"; });
+
+            // Add Title
+            outer_svg.append("text")
+                .attr("x", (width / 2))
+                .attr("y", 0 - (margin.top / 2))
+                .attr("text-anchor", "middle")
+                .style("font-size", "16px")
+                .style("text-decoration", "underline")
+                .text("Grouped Station Trips");
+
+            // Add X-axis Label
+            outer_svg.append("text")
+                .attr("transform",
+                    "translate(" + (width / 2) + " ," +
+                    (height + margin.top + 150) + ")")
+                .style("text-anchor", "middle")
+                .text("Stations");
+
+            // Add Y-axis Label
+            outer_svg.append("text")
+                .attr("transform", "rotate(-90)")
+                .attr("y", 0 - margin.left)
+                .attr("x", 0 - (height / 2))
+                .attr("dy", "1em")
+                .style("text-anchor", "middle")
+                .text("Number of Trips");
+
+            // Append the tooltip div to the body
+            var tooltip = d3.select("body")
+                .append("div")
+                .attr("class", "tooltip")
+                .style("opacity", 0)
+                .style("z-index", 1); // Set a higher z-index value
+
             scrollable_div.node().scrollBy(totalWidth, 0);
         });
     </script>
