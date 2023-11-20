@@ -6,8 +6,9 @@ const filter = {
     cityTraversal: 1,
     clientType: 1,
     timeStart: null,
-    timeEnd: null
-}        
+    timeEnd: null,
+    selectedCityOrStation: null
+}
 
 // Save a reference to the current URL
 const currentURL = new URL(window.location);
@@ -19,10 +20,12 @@ $.get("bases/nav.html", function(data) {
     $("#nav").ready(function() {
         for (const loc of ["intro", "geo", "cs-details", "global-details", "insights", "about"]) {
             $("#nav-" + loc).on("click", function() {
+                if (filter.timeStart !== null)
+                    currentURL.searchParams.set("timeStart", filter.timeStart.getTime());
+                if (filter.timeEnd !== null)
+                    currentURL.searchParams.set("timeEnd", filter.timeEnd.getTime());
                 currentURL.searchParams.set("cityTraversal", filter.cityTraversal);
                 currentURL.searchParams.set("clientType", filter.clientType);
-                currentURL.searchParams.set("timeStart", filter.timeStart.getTime());
-                currentURL.searchParams.set("timeEnd", filter.timeEnd.getTime());
                 window.location.assign(loc.replace("-", "_") + ".html" + currentURL.search);
             });
         }

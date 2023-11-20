@@ -9,7 +9,9 @@
     <div id="nav"></div>
 
     <div id="content">
+        <div class="selected-city-station-box">
 
+        </div>
     </div>
 
     <div id="filters"></div>
@@ -72,7 +74,7 @@
                 map.attr("transform", `translate(${transform.x}, ${transform.y}) scale(${transform.k})`);
                 map.selectAll("path.geo-map").attr("stroke-width", 1 / transform.k);
                 // Scale the pie charts according to the zoom transform (inversely proportional to keep the same size), but with the same positioning
-                map.selectAll("g.station-pie").attr("transform", (d) => `translate(${d[0].data.x}, ${d[0].data.y}) scale(${1 / transform.k})`);
+                map.selectAll("g.station-pie").attr("transform", (d) => `translate(${d[1][0].data.x}, ${d[1][0].data.y}) scale(${1 / transform.k})`);
 
                 // Scale the vector widths according to the transform scale
                 if (trip_vector_width_scale !== undefined) {
@@ -175,7 +177,9 @@
                 const pie_data = Array.from(available_bikes.entries())
                     .map((d) => {
                         const [x, y] = projection([metadata.stations[d[0]].long, metadata.stations[d[0]].lat]);
-                        return pie([
+                        // Include the station ID as the first element of the array, so that we know to which station the pie chart belongs when we click it
+                        // TODO: better structure please oh god
+                        return [d[0], pie([
                             {
                                 x: x,
                                 y: y,
@@ -188,7 +192,7 @@
                                 key: "docks_available_avg",
                                 value: d[1].docks_available_avg
                             }
-                        ])
+                        ])]
                     });
 
                 const pie_chart_groups = map
@@ -197,9 +201,16 @@
                     .join("g")
                         .classed("station-pie", true)
                         .attr("transform", (d) => {
-                            return `translate(${d[0].data.x}, ${d[0].data.y}) scale(${1 / d3.zoomTransform(map.node()).k})`;
+                            let pie = d[1]
+                            return `translate(${pie[0].data.x}, ${pie[0].data.y}) scale(${1 / d3.zoomTransform(map.node()).k})`;
                         });
                 
+                d3.selectAll("g.station-pie")
+                    .on("click", function(event) {
+                        console.log(event);
+                        console.log(this.__data__);
+                    })
+
                 // Remove previous pie charts if they exist
                 pie_chart_groups
                     .selectAll("path")
@@ -211,10 +222,10 @@
                     .attr("d", (d) => d3.arc()
                         .innerRadius(0)
                         .outerRadius(pie_chart_radius)
-                        .startAngle(d[0].startAngle)
-                        .endAngle(d[0].endAngle)()
+                        .startAngle(d[1][0].startAngle)
+                        .endAngle(d[1][0].endAngle)()
                     )
-                    .attr("fill", (d) => color(d[0].data.key))
+                    .attr("fill", (d) => color(d[1][0].data.key))
                 
                 pie_chart_groups
                     .append("path")
@@ -222,10 +233,10 @@
                     .attr("d", (d) => d3.arc()
                         .innerRadius(0)
                         .outerRadius(pie_chart_radius)
-                        .startAngle(d[1].startAngle)
-                        .endAngle(d[1].endAngle)()
+                        .startAngle(d[1][1].startAngle)
+                        .endAngle(d[1][1].endAngle)()
                     )
-                    .attr("fill", (d) => color(d[1].data.key))
+                    .attr("fill", (d) => color(d[1][1].data.key))
             };
         }
 
