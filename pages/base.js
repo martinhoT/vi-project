@@ -36,8 +36,12 @@ $.get("bases/nav.html", function(data) {
                     currentURL.searchParams.set("timeEnd", filter.timeEnd.getTime());
                 if (filter.selectedCity !== undefined)
                     currentURL.searchParams.set("selectedCity", filter.selectedCity);
+                else
+                    currentURL.searchParams.delete("selectedCity");
                 if (filter.selectedStation !== undefined)
                     currentURL.searchParams.set("selectedStation", filter.selectedStation);
+                else
+                    currentURL.searchParams.delete("selectedStation");
                 currentURL.searchParams.set("cityTraversal", filter.cityTraversal);
                 currentURL.searchParams.set("clientType", filter.clientType);
                 window.location.assign(loc.replace("-", "_") + ".html" + currentURL.search);

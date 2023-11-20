@@ -40,6 +40,8 @@
         function setupMap(geo) {
             console.log("Loaded map data");
 
+            geo.features = geo.features.filter((d) => d.properties.county == "San Francisco" || d.properties.county == "San Mateo" || d.properties.county == "Santa Clara");
+
             const svg = d3.select("#content")
                 .append("svg")
                 .attr("width", "100vw")
@@ -67,9 +69,19 @@
                 .classed("geo-map", true)
                 .datum(geo)
                 .attr("d", path)
-                .attr("fill", "none")
+                .attr("fill", "lightgray") // this color has to be set or clicking on the map won't work
                 .attr("stroke", "black")
-                .attr("stroke-width", 1);
+                .attr("stroke-width", 1)
+                .on("click", function(event) {
+                    if (filter.selectedStation === undefined && filter.selectedCity === undefined)
+                        return;
+
+                    selected_city_station_box_label.text("Nothing selected");
+                    selected_city_station_box_name.text("");
+                    filter.selectedStation = undefined;
+                    filter.selectedCity = undefined;
+                    d3.select("#content").dispatch("data-update");
+                });
             
             // Setup zoom and pan
             const zoom = d3.zoom()
@@ -213,6 +225,9 @@
                     .on("click", function(event) {
                         // TODO: this is assuming we are only selecting stations
                         let station_id = this.__data__.station;
+                        if (station_id === filter.selectedStation)
+                            return;
+
                         selected_city_station_box_label.text("Selected station");
                         selected_city_station_box_name.text(metadata.stations[station_id].name);
                         filter.selectStation(station_id);
