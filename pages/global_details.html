@@ -123,27 +123,23 @@
             });
 
             function sortContent(sort_type, sort_ascending) {
-                let sorted = undefined;
+                let sort_function = undefined;
 
                 switch (sort_type) {
                     case "alphabetic":
-                        sorted = station_scrollable_div_svg.selectAll("g.g-out").selectAll("rect")
-                            .sort((a, b) => sort_ascending ? d3.ascending(a.station, b.station) : d3.descending(a.station, b.station));
+                        sort_function = (a, b) => sort_ascending ? d3.ascending(a.station, b.station) : d3.descending(a.station, b.station)
                         break;
                     
                     case "total_trips":
-                        sorted = station_scrollable_div_svg.selectAll("g.g-out").selectAll("rect")
-                            .sort((a, b) => sort_ascending ? d3.ascending(a.value_in + a.value_out, b.value_in + b.value_out) : d3.descending(a.value_in + a.value_out, b.value_in + b.value_out));
+                        sort_function = (a, b) => sort_ascending ? d3.ascending(a.value_in + a.value_out, b.value_in + b.value_out) : d3.descending(a.value_in + a.value_out, b.value_in + b.value_out);
                         break;
                     
                     case "incoming_trips":
-                        sorted = station_scrollable_div_svg.selectAll("g").selectAll("rect")
-                            .sort((a, b) => sort_ascending ? d3.ascending(a.value_in, b.value_in) : d3.descending(a.value_in, b.value_in));
+                        sort_function = (a, b) => sort_ascending ? d3.ascending(a.value_in, b.value_in) : d3.descending(a.value_in, b.value_in);
                         break;
 
                     case "outgoing_trips":
-                        sorted = station_scrollable_div_svg.selectAll("g").selectAll("rect")
-                            .sort((a, b) => sort_ascending ? d3.ascending(a.value_out, b.value_out) : d3.descending(a.value_out, b.value_out));
+                        sort_function = (a, b) => sort_ascending ? d3.ascending(a.value_out, b.value_out) : d3.descending(a.value_out, b.value_out);
                         break;
                     
                     default:
@@ -151,13 +147,32 @@
                         return;
                 }
 
-                // sorted
-                //     .transition()
-                //     .attr("x", (d, i) => x(d.station) + x.bandwidth() / 2);
-                sorted
+                sorted_in = station_scrollable_div_svg
+                    .selectAll("g.g-in")
+                    .selectAll("rect")
+                    .sort(sort_function);
+                
+                sorted_out = station_scrollable_div_svg
+                    .selectAll("g.g-out")
+                    .selectAll("rect")
+                    .sort(sort_function);
+
+                // It doesn't matter whether we use sorted_in or sorted_out
+                stations_names_sorted = sorted_out.data().map((d) => d.station);
+
+                x.domain(stations_names_sorted)
+                d3.select(".station-x-axis")
+                    .transition()
+                    .duration(1000)
+                    .call(d3.axisBottom(x));
+
+                sorted_in
+                    .transition()
+                    .attr("x", (d, i) => x(d.station) + x.bandwidth() / 2);
+                sorted_out
                     .transition()
                     // TODO: how do I do this?
-                    .attr("x", (d, i) => i);
+                    .attr("x", (d, i) => x(d.station));
             }
 
             // TODO: how do we sort the X-axis? it's not bound to the data
@@ -184,6 +199,7 @@
 
                 // Add X axis
                 station_scrollable_div_svg.append("g")
+                    .classed("station-x-axis", true)
                     .attr("transform", "translate(0," + (height + margin.top) + ")")
                     .call(d3.axisBottom(x).tickSize(0))
                     .selectAll("text")
