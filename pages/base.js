@@ -1,13 +1,23 @@
 // Set filters' default values and get the filters' values if passed on the URL
-// The null dates will be set when the data is obtained and extents are extracted
+// The undefined attributes will be set when the data is obtained and extents are extracted
 // Whenever the filters change, dispatch the custom event 'data-update' with the appropriate details.
 // D3 code should listen for these events
 const filter = {
     cityTraversal: 1,
     clientType: 1,
-    timeStart: null,
-    timeEnd: null,
-    selectedCityOrStation: null
+    timeStart: undefined,
+    timeEnd: undefined,
+    selectedCity: undefined,
+    selectedStation: undefined,
+
+    selectStation: function(station) {
+        this.selectedStation = station;
+        this.selectedCity = undefined;
+    },
+    selectCity: function(city) {
+        this.selectedCity = city;
+        this.selectedStation = undefined;
+    }
 }
 
 // Save a reference to the current URL
@@ -20,10 +30,14 @@ $.get("bases/nav.html", function(data) {
     $("#nav").ready(function() {
         for (const loc of ["intro", "geo", "cs-details", "global-details", "insights", "about"]) {
             $("#nav-" + loc).on("click", function() {
-                if (filter.timeStart !== null)
+                if (filter.timeStart !== undefined)
                     currentURL.searchParams.set("timeStart", filter.timeStart.getTime());
-                if (filter.timeEnd !== null)
+                if (filter.timeEnd !== undefined)
                     currentURL.searchParams.set("timeEnd", filter.timeEnd.getTime());
+                if (filter.selectedCity !== undefined)
+                    currentURL.searchParams.set("selectedCity", filter.selectedCity);
+                if (filter.selectedStation !== undefined)
+                    currentURL.searchParams.set("selectedStation", filter.selectedStation);
                 currentURL.searchParams.set("cityTraversal", filter.cityTraversal);
                 currentURL.searchParams.set("clientType", filter.clientType);
                 window.location.assign(loc.replace("-", "_") + ".html" + currentURL.search);
@@ -42,6 +56,10 @@ for (const [key, value] of currentURL.searchParams) {
     // Date
     else if (["timeStart", "timeEnd"].includes(key))
         parsedValue = new Date(+value);
+
+    // City/Station selection
+    else if (["selectedCity", "selectedStation"].includes(key))
+        parsedValue = value;
 
     if (parsedValue != null)
         filter[key] = parsedValue

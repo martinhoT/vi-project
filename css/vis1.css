@@ -1,0 +1,17 @@
+.station-pie {
+    cursor: pointer;
+}
+
+.station-pie:hover {
+    stroke: black;
+    stroke-width: 3px;
+    transition: 0.2s;
+    z-index: 100;
+}
+
+#selected-city-station-box {
+    position: absolute;
+    top: 15%;
+    right: 5%;
+    text-align: end;
+}

@@ -4,13 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bike Share in San Francisco Bay Area</title>
+    <link rel="stylesheet" href="../css/vis1.css">
 </head>
 <body>
     <div id="nav"></div>
 
     <div id="content">
-        <div class="selected-city-station-box">
-
+        <div id="selected-city-station-box">
+            <span id="selected-city-station-box-label">Nothing selected</span>
+            <br>
+            <span id="selected-city-station-box-name"></span>
         </div>
     </div>
 
@@ -29,6 +32,10 @@
         // Global variables that need to be shared across functions
         let trip_vector_width_scale = undefined;
         const pie_chart_radius = 20;
+
+        // HTML element variables
+        const selected_city_station_box_label = d3.select("#selected-city-station-box-label")
+        const selected_city_station_box_name = d3.select("#selected-city-station-box-name");
 
         function setupMap(geo) {
             console.log("Loaded map data");
@@ -74,7 +81,7 @@
                 map.attr("transform", `translate(${transform.x}, ${transform.y}) scale(${transform.k})`);
                 map.selectAll("path.geo-map").attr("stroke-width", 1 / transform.k);
                 // Scale the pie charts according to the zoom transform (inversely proportional to keep the same size), but with the same positioning
-                map.selectAll("g.station-pie").attr("transform", (d) => `translate(${d[1][0].data.x}, ${d[1][0].data.y}) scale(${1 / transform.k})`);
+                map.selectAll("g.station-pie").attr("transform", (d) => `translate(${d.x}, ${d.y}) scale(${1 / transform.k})`);
 
                 // Scale the vector widths according to the transform scale
                 if (trip_vector_width_scale !== undefined) {
@@ -94,19 +101,19 @@
                 .classed("trip-vectors", true);
 
             // Define the connection vector arrowheads (markers)
-            d3.select("content")
-                .append("defs")
-                .append("marker")
-                .attr("id", "arrow")
-                .attr("viewBox", [0, 0, 10, 10])
-                .attr("refX", 5)
-                .attr("refY", 5)
-                .attr("markerWidth", 6)
-                .attr("markerHeight", 6)
-                .attr("orient", "auto-start-reverse")
-                .append("path")
-                .attr("d", d3.line()([0, 0], [10, 5], [0, 10]))
-                .attr("stroke", "black");
+            // d3.select("content")
+            //     .append("defs")
+            //     .append("marker")
+            //     .attr("id", "arrow")
+            //     .attr("viewBox", [0, 0, 10, 10])
+            //     .attr("refX", 5)
+            //     .attr("refY", 5)
+            //     .attr("markerWidth", 6)
+            //     .attr("markerHeight", 6)
+            //     .attr("orient", "auto-start-reverse")
+            //     .append("path")
+            //     .attr("d", d3.line()([0, 0], [10, 5], [0, 10]))
+            //     .attr("stroke", "black");
             
             return (data) => {
 
@@ -114,22 +121,19 @@
                     (g) => {
                         return d3.sum(g.map((v) => v.total_trips))
                     },
-                    (d) => d.start_station_id,
-                    (d) => d.end_station_id
+                    // consider in/out trips as the same (don't distinguish the way of the trips)
+                    (d) => d.start_station_id >  d.end_station_id ? d.end_station_id : d.start_station_id,
+                    (d) => d.start_station_id <= d.end_station_id ? d.end_station_id : d.start_station_id
                 );
 
                 const trip_vectors = total_trips.map((d) => {
                     const [sx, sy] = [metadata.stations[d[0]].long, metadata.stations[d[0]].lat];  // start
                     const [ex, ey] = [metadata.stations[d[1]].long, metadata.stations[d[1]].lat];  // end
-                    const distance = Math.sqrt(Math.pow(ex - sx, 2) + Math.pow(ey - sy, 2));
-                    const angle = Math.atan2(ey - sy, ex - sx);
-                    const length_margin = pie_chart_radius * 1.2
-                    const vector_length = Math.max(distance - length_margin * 2, 0);
                     return {
-                        sx: sx,// + length_margin * Math.cos(angle),
-                        sy: sy,// + length_margin * Math.sin(angle),
-                        ex: ex,// - length_margin * Math.cos(angle),
-                        ey: ey,// - length_margin * Math.sin(angle),
+                        sx: sx,
+                        sy: sy,
+                        ex: ex,
+                        ey: ey,
                         total_trips: d[2]
                     }
                 });
@@ -179,20 +183,21 @@
                         const [x, y] = projection([metadata.stations[d[0]].long, metadata.stations[d[0]].lat]);
                         // Include the station ID as the first element of the array, so that we know to which station the pie chart belongs when we click it
                         // TODO: better structure please oh god
-                        return [d[0], pie([
-                            {
-                                x: x,
-                                y: y,
-                                key: "bikes_available_avg",
-                                value: d[1].bikes_available_avg
-                            },
-                            {
-                                x: x,
-                                y: y,
-                                key: "docks_available_avg",
-                                value: d[1].docks_available_avg
-                            }
-                        ])]
+                        return {
+                            station: d[0],
+                            x: x,
+                            y: y,
+                            pie: pie([
+                                {
+                                    key: "bikes_available_avg",
+                                    value: d[1].bikes_available_avg
+                                },
+                                {
+                                    key: "docks_available_avg",
+                                    value: d[1].docks_available_avg
+                                }
+                            ])
+                        }
                     });
 
                 const pie_chart_groups = map
@@ -201,14 +206,17 @@
                     .join("g")
                         .classed("station-pie", true)
                         .attr("transform", (d) => {
-                            let pie = d[1]
-                            return `translate(${pie[0].data.x}, ${pie[0].data.y}) scale(${1 / d3.zoomTransform(map.node()).k})`;
+                            return `translate(${d.x}, ${d.y}) scale(${1 / d3.zoomTransform(map.node()).k})`;
                         });
                 
                 d3.selectAll("g.station-pie")
                     .on("click", function(event) {
-                        console.log(event);
-                        console.log(this.__data__);
+                        // TODO: this is assuming we are only selecting stations
+                        let station_id = this.__data__.station;
+                        selected_city_station_box_label.text("Selected station");
+                        selected_city_station_box_name.text(metadata.stations[station_id].name);
+                        filter.selectStation(station_id);
+                        d3.select("#content").dispatch("data-update");
                     })
 
                 // Remove previous pie charts if they exist
@@ -222,10 +230,10 @@
                     .attr("d", (d) => d3.arc()
                         .innerRadius(0)
                         .outerRadius(pie_chart_radius)
-                        .startAngle(d[1][0].startAngle)
-                        .endAngle(d[1][0].endAngle)()
+                        .startAngle(d.pie[0].startAngle)
+                        .endAngle(d.pie[0].endAngle)()
                     )
-                    .attr("fill", (d) => color(d[1][0].data.key))
+                    .attr("fill", (d) => color(d.pie[0].data.key))
                 
                 pie_chart_groups
                     .append("path")
@@ -233,10 +241,10 @@
                     .attr("d", (d) => d3.arc()
                         .innerRadius(0)
                         .outerRadius(pie_chart_radius)
-                        .startAngle(d[1][1].startAngle)
-                        .endAngle(d[1][1].endAngle)()
+                        .startAngle(d.pie[1].startAngle)
+                        .endAngle(d.pie[1].endAngle)()
                     )
-                    .attr("fill", (d) => color(d[1][1].data.key))
+                    .attr("fill", (d) => color(d.pie[1].data.key))
             };
         }
 
@@ -295,7 +303,7 @@
 
             trip_vector_width_scale = d3.scalePow()
                 .domain(total_trips_extent)
-                .range([0.15, 3])
+                .range([0.5, 3])
                 .exponent(0.5);
 
             function updateData() {
@@ -313,7 +321,11 @@
                 let clientTypeFilter = (filter.clientType == 0) ? clientTypeFilter0 : ((filter.clientType == 1) ? clientTypeFilter1 : clientTypeFilter2);
 
                 let dataFiltered = data.filter((d) => {
-                    return d.start_date >= filter.timeStart && d.end_date <= filter.timeEnd && cityTraversalFilter(d) && clientTypeFilter(d);
+                    return d.start_date >= filter.timeStart
+                        && d.end_date <= filter.timeEnd
+                        && cityTraversalFilter(d)
+                        && clientTypeFilter(d)
+                        && (filter.selectedStation === undefined || d.start_station_id == filter.selectedStation || d.end_station_id == filter.selectedStation);
                 });
 
                 console.log("Data filtered");
