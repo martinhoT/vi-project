@@ -30,9 +30,10 @@
     stroke-width: 3px;
 }
 
-#selected-city-station-box {
+#details-box {
     position: absolute;
     top: 15%;
     right: 5%;
     text-align: end;
+    background-color: white;
 }

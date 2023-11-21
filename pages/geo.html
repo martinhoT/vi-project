@@ -10,10 +10,13 @@
     <div id="nav"></div>
 
     <div id="content">
-        <div id="selected-city-station-box">
-            <span id="selected-city-station-box-label">Nothing selected</span>
+        <div id="details-box">
+            <h4 id="selected-city-station-box-label">Nothing selected</h4>
+            <h3 id="selected-city-station-box-name"></h3>
             <br>
-            <span id="selected-city-station-box-name"></span>
+            <br>
+            <div id="status-legend"></div>
+
         </div>
     </div>
 
@@ -151,21 +154,6 @@
                 .append("g")
                 .classed("trip-vectors", true);
 
-            // Define the connection vector arrowheads (markers)
-            // d3.select("content")
-            //     .append("defs")
-            //     .append("marker")
-            //     .attr("id", "arrow")
-            //     .attr("viewBox", [0, 0, 10, 10])
-            //     .attr("refX", 5)
-            //     .attr("refY", 5)
-            //     .attr("markerWidth", 6)
-            //     .attr("markerHeight", 6)
-            //     .attr("orient", "auto-start-reverse")
-            //     .append("path")
-            //     .attr("d", d3.line()([0, 0], [10, 5], [0, 10]))
-            //     .attr("stroke", "black");
-
             return (data) => {
 
                 const total_trips = d3.flatRollup(data,
@@ -219,6 +207,38 @@
             const color = d3.scaleOrdinal()
                 .domain(["bikes_available_avg", "docks_available_avg"])
                 .range(["#cee741", "#e36124"]);
+
+            // Add Legend
+            let legend_width = 250;
+            let legend_height = 75;
+            let legend_svg = d3.select("#status-legend")
+                .append("svg")
+                .attr("width", legend_width)
+                .attr("height", legend_height)
+            
+            legend_svg.append("rect")
+                .attr("fill", "white")
+                .attr("width", legend_width)
+                .attr("height", legend_height);
+
+            var legend = legend_svg.append("g")
+                .attr("transform", "translate(0" + "," + 20 + ")")
+                .selectAll("g")
+                .data(color.domain().slice())
+                .enter().append("g")
+                .attr("transform", function (d, i) { return "translate(20," + i * 20 + ")"; });
+
+            legend.append("rect")
+                .attr("width", 18)
+                .attr("height", 18)
+                .attr("fill", color);
+
+            legend.append("text")
+                .attr("x", 24)
+                .attr("y", 9)
+                .attr("dy", ".35em")
+                .style("text-anchor", "start")
+                .text(function (d, i) { return i === 0 ? "Average bikes available" : "Average docks available"; });
 
             function selectStationMap(station_elem, visual_only = false) {
                 let station_id = station_elem.__data__.station;
