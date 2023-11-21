@@ -1,3 +1,7 @@
+.geo-map {
+    cursor: pointer;
+}
+
 .station-pie {
     cursor: pointer;
 }
@@ -6,7 +10,24 @@
     stroke: black;
     stroke-width: 3px;
     transition: 0.2s;
-    z-index: 100;
+}
+
+.station-pie-selected {
+    stroke: black;
+    stroke-width: 3px;
+}
+
+.geo-map-city {
+    cursor: pointer;
+}
+
+.geo-map-city:hover {
+    stroke-width: 3px;
+    transition: 0.2s;
+}
+
+.geo-map-city-selected {
+    stroke-width: 3px;
 }
 
 #selected-city-station-box {

@@ -2,3 +2,9 @@
 data/*
 
 !data/example.json
+
+# Synthetic GeoJSON data for the cities
+!data/mountain_view.geojson
+!data/palo_alto.geojson
+!data/redwood_city.geojson
+!data/san_jose.geojson
