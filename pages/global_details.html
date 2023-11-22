@@ -58,6 +58,15 @@
     <script src="base.js"></script>
     <script>
 
+        // TODO: ascending checkbox not on by default
+        // TODO: client type chart rects change position sometimes
+        // TODO: client type chart legend makes no sense when it could be applied to X axis
+
+        let data_update_callbacks = [];
+        d3.select("#content").on("data-update", () => {
+            data_update_callbacks.forEach((callback) => callback());
+        });
+
         function visTraffic(metadata) {
             // Set the dimensions and margins of the graph
             const margin = {top: 10, right: 30, bottom: 200, left: 50};
@@ -93,14 +102,26 @@
                 .append("g")
                 .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
+            const x_axis_svg = station_scrollable_div_svg.append("g")
+                    .classed("station-x-axis", true);
+            const y_axis_svg = station_outer_svg.append("g");
+            const bars_out_svg = station_scrollable_div_svg.append("g")
+                    .classed("g-out", true);
+            const bars_in_svg = station_scrollable_div_svg.append("g")
+                    .classed("g-in", true);
+
             // NOTE: disadvantage of having the same array of stations: all stations will appear even if they have no trips for the given filters
             const stations_id_name_pairs = Object.entries(metadata["stations"]).map((s) => [s[0], s[1]["name"]]);
             const stations_names = stations_id_name_pairs.map((p) => p[1]);
             const stations_ids = stations_id_name_pairs.map((p) => p[0]);
 
             // Create X scale (necessary for the sorting methods)
+            const x_max_length = 24;
+            function truncate_station_name(station_name) {
+                return (station_name.length > x_max_length) ? station_name.slice(0, x_max_length - 3) + "..." : station_name;
+            }
             const x = d3.scaleBand()
-                .domain(stations_names)
+                .domain(stations_names.map(truncate_station_name))
                 .range([0, totalWidth])
                 .padding([0.2]);
 
@@ -159,7 +180,7 @@
                     .sort(sort_function);
 
                 // It doesn't matter whether we use sorted_in or sorted_out
-                stations_names_sorted = sorted_out.data().map((d) => d.station);
+                stations_names_sorted = sorted_out.data().map((d) => truncate_station_name(d.station));
 
                 x.domain(stations_names_sorted)
                 d3.select(".station-x-axis")
@@ -169,17 +190,44 @@
 
                 sorted_in
                     .transition()
-                    .attr("x", (d, i) => x(d.station) + x.bandwidth() / 2);
+                    .attr("x", (d, i) => x(truncate_station_name(d.station)) + x.bandwidth() / 2);
                 sorted_out
                     .transition()
-                    // TODO: how do I do this?
-                    .attr("x", (d, i) => x(d.station));
+                    .attr("x", (d, i) => x(truncate_station_name(d.station)));
             }
 
-            // TODO: how do we sort the X-axis? it's not bound to the data
-            d3.select("#content-traffic-sort").on("change", function() {
+            d3.select("#content-traffic-sort").on("input", function() {
                 sortContent(this.value, d3.select("#content-traffic-sort-asc").property("checked"));
             });
+
+            d3.select("#content-traffic-sort-asc").on("input", function() {
+                sortContent(d3.select("#content-traffic-sort").node().value, this.checked);
+            });
+
+            // Color palette
+            const color = d3.scaleOrdinal()
+                    .domain(["start", "end"])
+                    .range(['#e41a1c', '#377eb8']);
+
+            // Add Legend
+            var legend = station_outer_svg.append("g")
+                    .attr("transform", "translate(" + (width - 100) + "," + 20 + ")")
+                    .selectAll("g")
+                    .data(color.domain().slice().reverse())
+                    .enter().append("g")
+                    .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
+
+            legend.append("rect")
+                .attr("width", 18)
+                .attr("height", 18)
+                .attr("fill", color);
+
+            legend.append("text")
+                .attr("x", 24)
+                .attr("y", 9)
+                .attr("dy", ".35em")
+                .style("text-anchor", "start")
+                .text(function(d) { return d === "start" ? "Outgoing" : "Incoming"; });
 
             return (data) => {
                 // Data processing for outgoing trips
@@ -199,8 +247,7 @@
                 });
 
                 // Add X axis
-                station_scrollable_div_svg.append("g")
-                    .classed("station-x-axis", true)
+                x_axis_svg
                     .attr("transform", "translate(0," + (height + margin.top) + ")")
                     .call(d3.axisBottom(x).tickSize(0))
                     .selectAll("text")
@@ -212,57 +259,29 @@
                     .domain([0, d3.max(Object.values(start_station_counts).concat(Object.values(end_station_counts)))])
                     .range([height, 0]);
 
-                station_outer_svg.append("g")
-                    .call(d3.axisLeft(y));
-
-                // Color palette
-                const color = d3.scaleOrdinal()
-                    .domain(["start", "end"])
-                    .range(['#e41a1c', '#377eb8']);
+                y_axis_svg.call(d3.axisLeft(y));
 
                 // Show the bars for outgoing trips
-                station_scrollable_div_svg.append("g")
-                    .classed("g-out", true)
+                bars_out_svg
                     .selectAll("rect")
                     .data(counts_data)
-                    .enter().append("rect")
-                    .attr("x", function(d, i) { return x(d.station); })
+                    .join("rect")
+                    .attr("x", function(d, i) { return x(truncate_station_name(d.station)); })
                     .attr("y", function(d) { return y(d.value_out) + margin.top; })
                     .attr("width", x.bandwidth() / 2)
                     .attr("height", function(d) { return height - y(d.value_out); })
                     .attr("fill", function(d) { return color("start"); });
 
                 // Show the bars for incoming trips
-                station_scrollable_div_svg.append("g")
-                    .classed("g-in", true)
+                bars_in_svg
                     .selectAll("rect")
                     .data(counts_data)
-                    .enter().append("rect")
-                    .attr("x", function(d, i) { return x(d.station) + x.bandwidth() / 2; })
+                    .join("rect")
+                    .attr("x", function(d, i) { return x(truncate_station_name(d.station)) + x.bandwidth() / 2; })
                     .attr("y", function(d) { return y(d.value_in) + margin.top; })
                     .attr("width", x.bandwidth() / 2)
                     .attr("height", function(d) { return height - y(d.value_in); })
                     .attr("fill", function(d) { return color("end"); });
-
-                // Add Legend
-                var legend = station_outer_svg.append("g")
-                    .attr("transform", "translate(" + (width - 100) + "," + 20 + ")")
-                    .selectAll("g")
-                    .data(color.domain().slice().reverse())
-                    .enter().append("g")
-                    .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
-
-                legend.append("rect")
-                    .attr("width", 18)
-                    .attr("height", 18)
-                    .attr("fill", color);
-
-                legend.append("text")
-                    .attr("x", 24)
-                    .attr("y", 9)
-                    .attr("dy", ".35em")
-                    .style("text-anchor", "start")
-                    .text(function(d) { return d === "start" ? "Outgoing" : "Incoming"; });
 
                 // Default sort
                 sortContent("alphabetic", true);
@@ -272,23 +291,6 @@
         }
 
         function visBikeUsage(metadata) {
-            // const width = 500;
-            // const height = 300;
-            // const margin = 50;
-
-            // const colorOrdinal = d3.scaleOrdinal(d3.schemeCategory10);
-
-            // const svg = d3.select('#content-traffic-vis').append('svg')
-            //     .attr('width', width)
-            
-            // return (dataFiltered) => svg.selectAll("circle")
-            //     .data(dataFiltered)
-            //     .join("circle")
-            //         .attr("cx", (d, i) => 25 + i * 50)
-            //         .attr("cy", (d) => d.Numero_de_Alunos)
-            //         .attr("r", 10)
-            //         .attr("fill", (d) => colorOrdinal(d.city));
-
             return () => null;
         }
 
@@ -305,7 +307,39 @@
                 .append("g")
                 .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-            // TODO: just adding elements on data updates instead of actually updating what's already there
+            const x_axis_svg = svg.append("g")
+                .attr("transform", "translate(0," + h + ")");
+            const y_axis_svg = svg.append("g");
+            const title_svg = svg.append("text");
+            const title_y_svg = svg.append("text");
+
+            // Color palette
+            const color = d3.scaleOrdinal()
+                .domain(["Customer", "Subscriber"])
+                .range(["#FF7F0E", '#1F77B4']);
+
+            // Add legend
+            const legend = svg.selectAll(".legend")
+                .data(["Customer", "Subscriber"])
+                .join("g")
+                .attr("class", "legend")
+                .attr("transform", function(d, i) {
+                    return "translate(0," + i * 20 + ")";
+                });
+
+            legend.append("rect")
+                .attr("x", w - 18)
+                .attr("width", 18)
+                .attr("height", 18)
+                .style("fill", (d) => color(d));
+
+            legend.append("text")
+                .attr("x", w - 24)
+                .attr("y", 9)
+                .attr("dy", ".35em")
+                .style("text-anchor", "end")
+                .text((d) => d);
+
             return (data) => {
                 // Extract the subscription_type column
                 let subscriptionTypes = data.map(function(d) {
@@ -321,9 +355,10 @@
                 let maxCount = Math.max(...Object.values(labelCounts));
 
                 // Create rectangles based on the counts
-                var rects = svg.selectAll("rect")
+                var rects = svg.selectAll("rect.data")
                     .data(Object.entries(labelCounts))
                     .join("rect")
+                    .classed("data", true)
                     .attr("x", function (d, i) {
                         return (i * (w / Object.keys(labelCounts).length));
                     })  
@@ -335,7 +370,7 @@
                         return (h * d[1] / maxCount);
                     })
                     .attr("fill", function (d) {
-                        return "rgb(0, 100, " + Math.round((d[1] / maxCount) * 255) + ")";
+                        return color(d[0]);
                     });
 
                 // Create x and y scales
@@ -353,15 +388,11 @@
                 var yAxis = d3.axisLeft(yScale);
 
                 // Append x and y axes to the SVG
-                svg.append("g")
-                    .attr("transform", "translate(0," + h + ")")
-                    .call(xAxis);
-
-                svg.append("g")
-                    .call(yAxis);
+                x_axis_svg.call(xAxis);
+                y_axis_svg.call(yAxis);
 
                 // Add title to the chart
-                svg.append("text")
+                title_svg
                     .attr("x", w / 2)
                     .attr("y", -margin.top / 2.3)
                     .attr("text-anchor", "middle")
@@ -369,7 +400,7 @@
                     .text("Subscription Types Occurrences");
 
                 // Add Y-axis title
-                svg.append("text")
+                title_y_svg
                     .attr("transform", "rotate(-90)")
                     .attr("y", -margin.left + 10)
                     .attr("x", -h / 2)
@@ -377,32 +408,6 @@
                     .style("text-anchor", "middle")
                     .style("font-size", "14px")
                     .text("Count");
-
-                // Add legend
-                let legend = svg.selectAll(".legend")
-                    .data(Object.entries(labelCounts))
-                    .join("g")
-                    .attr("class", "legend")
-                    .attr("transform", function(d, i) {
-                        return "translate(0," + i * 20 + ")";
-                    });
-
-                legend.append("rect")
-                    .attr("x", w - 18)
-                    .attr("width", 18)
-                    .attr("height", 18)
-                    .style("fill", function(d) {
-                        return "rgb(0, 100, " + Math.round((d[1] / maxCount) * 255) + ")";
-                    });
-
-                legend.append("text")
-                    .attr("x", w - 24)
-                    .attr("y", 9)
-                    .attr("dy", ".35em")
-                    .style("text-anchor", "end")
-                    .text(function(d) {
-                        return d[0] ;
-                    });
             };
         }
 
@@ -445,7 +450,7 @@
             }
 
             console.log("Initializing visualizations (trip data)");
-            d3.select("#content").on("data-update", updateData);
+            data_update_callbacks.push(updateData)
             updateData();
         }
 
