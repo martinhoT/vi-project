@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bike Share in San Francisco Bay Area</title>
+    <title>Global details</title>
     <link rel="stylesheet" href="../css/vis3.css">
 </head>
 <body>
@@ -134,14 +134,14 @@
                 let traffic_type = this.value;
                 switch (traffic_type) {
                     case "city":
-                        station_graph.style("display", "none")
-                        city_graph.style("display", "block")
+                        station_graph.style("display", "none");
+                        city_graph.style("display", "block");
                         d3.select("#content-traffic-stacked").property("disabled", true)
                         break;
                 
                     case "station":
-                        city_graph.style("display", "none")
-                        station_graph.style("display", "block")
+                        city_graph.style("display", "none");
+                        station_graph.style("display", "block");
                         d3.select("#content-traffic-stacked").property("disabled", false)
                         break;
 

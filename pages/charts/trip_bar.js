@@ -230,9 +230,17 @@ function tripBarUpdate(bar_data, chart_attributes, sort_type, sort_ascending, st
         .data(bar_data)
         .join("rect")
         .attr("x", (d) => x(truncateLabel(d.label)))
-        .attr("y", (d) => y(d.value_out + ((stacked) ? d.value_in : 0)) + margin.top)
+        .attr("y", (d) => {
+            return (d.value_out + ((stacked) ? d.value_in : 0) > 0)
+                ? y(d.value_out + ((stacked) ? d.value_in : 0)) + margin.top
+                : 0; // the scale may be logarithmic, so we can't have 0 values
+        })
         .attr("width", x.bandwidth() / (2 - stacked))  // evil
-        .attr("height", (d) => h - y(d.value_out + ((stacked) ? d.value_in : 0)))
+        .attr("height", (d) => {
+            return (d.value_out + ((stacked) ? d.value_in : 0) > 0)
+                ? h - y(d.value_out + ((stacked) ? d.value_in : 0))
+                : 0; // don't render bars at all if no value is present
+        })
         .attr("fill", color("start"))
         .on("mouseover", function (event, d) {
             tooltip.transition()
@@ -253,12 +261,18 @@ function tripBarUpdate(bar_data, chart_attributes, sort_type, sort_ascending, st
         .selectAll("rect")
         .data(bar_data)
         .join("rect")
-        .attr("x", (d) => {
-            return x(truncateLabel(d.label)) + ((stacked) ? 0 : x.bandwidth() / 2)}
-            )
-        .attr("y", (d) => y(d.value_in) + margin.top)
+        .attr("x", (d) => x(truncateLabel(d.label)) + ((stacked) ? 0 : x.bandwidth() / 2))
+        .attr("y", (d) => {
+            return (d.value_in > 0)
+                ? y(d.value_in) + margin.top
+                : 0;
+        })
         .attr("width", x.bandwidth() / (2 - stacked))
-        .attr("height", (d) => h - y(d.value_in))
+        .attr("height", (d) => {
+            return (d.value_in > 0)
+                ? h - y(d.value_in)
+                : 0;
+        })
         .attr("fill", color("end"))
         .on("mouseover", function (event, d) {
             tooltip.transition()

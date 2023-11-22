@@ -1,35 +1,3 @@
-.geo-map {
-    cursor: pointer;
-}
-
-.station-pie {
-    cursor: pointer;
-}
-
-.station-pie:hover {
-    stroke: black;
-    stroke-width: 3px;
-    transition: 0.2s;
-}
-
-.station-pie-selected {
-    stroke: black;
-    stroke-width: 3px;
-}
-
-.geo-map-city {
-    cursor: pointer;
-}
-
-.geo-map-city:hover {
-    stroke-width: 3px;
-    transition: 0.2s;
-}
-
-.geo-map-city-selected {
-    stroke-width: 3px;
-}
-
 #details-box {
     position: absolute;
     top: 15%;

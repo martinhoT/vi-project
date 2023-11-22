@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bike Share in San Francisco Bay Area</title>
+    <title>Geographic view</title>
     <link rel="stylesheet" href="../css/vis1.css">
+    <link rel="stylesheet" href="../css/geo.css">
 </head>
 <body>
     <div id="nav"></div>
@@ -24,6 +25,7 @@
     <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
     <script src="https://d3js.org/d3.v7.js"></script>
     <script src="base.js"></script>
+    <script src="charts/geo_map.js"></script>
     <script>
 
         // TODO: city stroke-width doesn't scale with zoom
@@ -36,7 +38,6 @@
         // Global variables that need to be shared across functions
         let trip_vector_width_scale = undefined;
         const pie_chart_radius = 20;
-        const city_color = d3.scaleOrdinal(d3.schemeSet2);
 
         // HTML element variables
         const selected_city_station_box_label = d3.select("#selected-city-station-box-label")
@@ -53,32 +54,26 @@
                 "geo": bay_area_geo.features.find((d) => d.properties.county == "San Francisco")
             });
 
-            const svg = d3.select("#content")
-                .append("svg")
-                .attr("width", "100vw")
-                .attr("height", "calc(100vh - 56px)");
+            let components = undefined;
 
-            const {width, height} = svg.node().getBoundingClientRect();
+            function zoom_callback(transform) {
+                // Scale the pie charts according to the zoom transform (inversely proportional to keep the same size), but with the same positioning
+                components.map.selectAll("g.station-pie").attr("transform", (d) => `translate(${d.x}, ${d.y}) scale(${1 / transform.k})`);
+                
+                // Scale the vector widths according to the transform scale
+                if (trip_vector_width_scale !== undefined) {
+                    components.map.selectAll("g.trip-vectors path").attr("stroke-width", (d) => trip_vector_width_scale(d.total_trips) / transform.k);
+                }
+            }
 
-            const projection = d3.geoMercator()
-                .fitSize([width, height], bay_area_geo);
+            components = geoMapSetup("#content", "100vw", "calc(100vh - 56px)", bay_area_geo, city_geos, zoom_callback);
 
-            const path = d3.geoPath()
-                .projection(projection);
-
-            const map = svg.append("g")
-                .classed("geo", true);
-            
-            map
-                .append("path")
-                .classed("geo-map", true)
-                .datum(bay_area_geo)
-                .attr("d", path)
-                .attr("fill", "lightgray") // this color has to be set or clicking on the map won't work
-                .attr("stroke", "black")
-                .attr("stroke-width", 1)
+            components.map
                 .on("click", function(event) {
-                    if (filter.selectedStation === undefined && filter.selectedCity === undefined)
+                    if (filter.selectedStation === undefined && filter.selectedCity === undefined
+                        // Clicks can overlap, we can't allow the map to overwrite actual selections
+                        || !d3.select(event.target).classed("geo-map")
+                    )
                         return;
 
                     selected_city_station_box_label.text("Nothing selected");
@@ -92,7 +87,7 @@
                 });
             
             function selectCityMap(city_elem, visual_only = false) {
-                let city = city_elem.__data__.properties.county;
+                let city = city_elem.__data__.geo.properties.county;
                 if (!visual_only && city === filter.selectedCity)
                     return;
 
@@ -108,45 +103,16 @@
                 }
             }
 
-            for (const city_geo of city_geos) {
-                let elem = map
-                    .append("path")
-                    .classed("geo-map-city", true)
-                    .datum(city_geo.geo)
-                    .attr("d", path)
-                    .attr("fill", city_color(city_geo.city))
-                    .attr("stroke", d3.color(city_color(city_geo.city)).darker(1))
-                    .attr("stroke-width", 1)
-                    .on("click", function(event) {
-                        selectCityMap(this);
-                    });
+            d3.selectAll("path.geo-map-city")
+                .on("click", function(event) {
+                    selectCityMap(this);
+                })
+                .each(function(d) {
+                    if (d.city === filter.selectedCity)
+                        selectCityMap(this, true);
+                });
 
-                if (city_geo.city === filter.selectedCity)
-                    selectCityMap(elem.node(), true);
-            }
-
-            // Setup zoom and pan
-            const zoom = d3.zoom()
-                .scaleExtent([1, 128])
-                .on("zoom", zoomed);
-            
-            function zoomed(event) {
-                const {transform} = event;
-                map.attr("transform", `translate(${transform.x}, ${transform.y}) scale(${transform.k})`);
-                map.selectAll("path.geo-map").attr("stroke-width", 1 / transform.k);
-                map.selectAll("path.geo-map-city").attr("stroke-width", 1 / transform.k);
-                // Scale the pie charts according to the zoom transform (inversely proportional to keep the same size), but with the same positioning
-                map.selectAll("g.station-pie").attr("transform", (d) => `translate(${d.x}, ${d.y}) scale(${1 / transform.k})`);
-
-                // Scale the vector widths according to the transform scale
-                if (trip_vector_width_scale !== undefined) {
-                    map.selectAll("g.trip-vectors path").attr("stroke-width", (d) => trip_vector_width_scale(d.total_trips) / transform.k);
-                }
-            }
-
-            svg.call(zoom);
-
-            return projection;
+            return components.projection;
         }
 
         function visTripVectors(metadata, projection) {

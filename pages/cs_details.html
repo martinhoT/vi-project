@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>City/Station details</title>
+    <link rel="stylesheet" href="../css/vis2.css">
+    <link rel="stylesheet" href="../css/geo.css">
+</head>
+<body>
+    <div id="nav"></div>
+
+    <div id="content">
+        <div id="content-title">
+            <h1>Details of <span id="content-title-selected"></span></h1>
+            <button id="map-selector-opener" class="btn btn-light" data-bs-toggle="button">
+                📍
+            </button>
+
+            <div id="map-selector">
+
+            </div>
+        </div>
+        
+        <div class="vis-grid">
+            <div id="content-traffic-specific">
+                <h2>
+                    Bike traffic from/to other <span id="content-traffic-title-suffix">...</span>
+                </h2>
+                
+                <p>
+                    Sort by
+                    <select name="content-traffic-sort" id="content-traffic-sort" autocomplete="off">
+                        <option value="alphabetic" selected>Alphabetic</option>
+                        <option value="total_trips">Total trips</option>
+                        <option value="incoming_trips">Incoming trips</option>
+                        <option value="outgoing_trips">Outgoing trips</option>
+                    </select>
+    
+                    <input type="checkbox" name="content-traffic-sort-asc" id="content-traffic-sort-asc" checked>
+                    Ascending
+    
+                    <input type="checkbox" name="content-traffic-stacked" id="content-traffic-stacked" disabled>
+                    Stacked
+                    <span style="cursor: help" data-toggle="tooltip" data-placement="top" title="Only makes sense for the Stations chart, the Cities one has a logarithmic scale on the Y axis">
+                        ⓘ
+                    </span>
+                </p>
+    
+                <div id="content-traffic-specific-vis"></div>
+            </div>
+    
+            <div id="content-availability">
+    
+                <div id="content-availability-vis"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="filters"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+    <script src="http://d3js.org/d3.v6.js"></script>
+    <script src="base.js"></script>
+    <script src="charts/trip_bar.js"></script>
+    <script src="charts/geo_map.js"></script>
+    <script>
+
+        // TODO: ascending checkbox not on by default
+        // TODO: if all values are 0 then the bars will be drawn anyway, but they should be hidden
+        // TODO: maybe the X-axis highlight of the selected city/station could be better (only bold...?)
+
+        let data_update_callbacks = [];
+        d3.select("#content").on("data-update", () => {
+            data_update_callbacks.forEach((callback) => callback());
+        });
+
+        // Global variables
+        const station_circle_radius = 15;
+
+        // HTML elements
+        const content_traffic_title_suffix = d3.select("#content-traffic-title-suffix");
+        const content_title_selected = d3.select("#content-title-selected");
+
+        d3.select("#map-selector-opener").on("click", function(event) {
+            const map_selector = d3.select("#map-selector");
+            if (map_selector.style("display") === "block")
+                map_selector.style("display", "none");
+            else {
+                map_selector.style("display", "block");
+                map_selector.style("top", event.y + "px");
+                map_selector.style("left", event.x + "px");
+            }
+        });
+
+        function setupMap(bay_area_geo, city_geos, stations_metadata) {
+            console.log("Loaded map data");
+
+            bay_area_geo.features = bay_area_geo.features.filter((d) => d.properties.county == "San Francisco" || d.properties.county == "San Mateo" || d.properties.county == "Santa Clara");
+
+            // San Francisco boundaries are already provided by the Bay Area GeoJSON
+            city_geos.push({
+                "city": "San Francisco",
+                "geo": bay_area_geo.features.find((d) => d.properties.county == "San Francisco")
+            });
+
+            let components = undefined;
+
+            function zoom_callback(transform) {
+                // Scale the pie charts according to the zoom transform (inversely proportional to keep the same size), but with the same positioning
+                components.map.selectAll("circle.station-pie")
+                    .attr("r", station_circle_radius / transform.k)
+                    .attr("stroke-width", 1 / transform.k);
+            }
+
+            components = geoMapSetup("#map-selector", 500, 500, bay_area_geo, city_geos, zoom_callback);
+            
+            // Don't indicate that the map is clickable
+            components.map.select("path.geo-map").style("cursor", "default");
+
+            function selectCityMap(city_elem, visual_only = false) {
+                let city = city_elem.__data__.city;
+                if (!visual_only && city === filter.selectedCity)
+                    return;
+
+                content_traffic_title_suffix.text("cities");
+                d3.selectAll("path.geo-map-city").classed("geo-map-city-selected", false);
+                d3.selectAll("circle.station-pie").classed("station-pie-selected", false);
+                d3.select(city_elem).classed("geo-map-city-selected", true);
+
+                if (!visual_only) {
+                    filter.selectCity(city);
+                    d3.select("#content").dispatch("data-update");
+                }
+            }
+
+            function selectStationMap(station_elem, visual_only = false) {
+                let station_id = station_elem.__data__.station;
+                if (!visual_only && station_id === filter.selectedStation)
+                    return;
+
+                content_traffic_title_suffix.text("stations");
+                d3.selectAll("path.geo-map-city").classed("geo-map-city-selected", false);
+                d3.selectAll("circle.station-pie").classed("station-pie-selected", false);
+                d3.select(station_elem).classed("station-pie-selected", true);
+
+                if (!visual_only) {
+                    filter.selectStation(station_id);
+                    d3.select("#content").dispatch("data-update");
+                }
+            }
+
+            d3.selectAll("path.geo-map-city")
+                .on("click", function(event) {
+                    selectCityMap(this);
+                })
+                .each(function(d) {
+                    if (d.city === filter.selectedCity) {
+                        selectCityMap(this, true);
+                    }
+                });
+
+            components.map
+                .selectAll("circle.station-pie")
+                .data(Object.entries(stations_metadata).map((d) => {
+                    const [x, y] = components.projection([d[1].long, d[1].lat]);
+                    return {
+                        station: d[0],
+                        name: d[1].name,
+                        x: x,
+                        y: y,
+                    }
+                }))
+                .join("circle")
+                .classed("station-pie", true)
+                .attr("cx", (d) => d.x)
+                .attr("cy", (d) => d.y)
+                .attr("r", station_circle_radius)
+                .attr("fill", "salmon")
+                .attr("stroke", d3.color("salmon").darker(1))
+                .attr("stroke-width", 1)
+                .on("click", function(event) {
+                    selectStationMap(this);
+                })
+                .each(function(d) {
+                    if (d.station === filter.selectedStation) {
+                        selectStationMap(this, true);
+                    }
+                });
+
+            // Disable the map selector after drawing
+            d3.select("#map-selector").style("display", "none");
+
+            return components.projection;
+        }
+
+        function visTrafficSpecific(metadata) {
+            // All hidden by default, unless a selection has been done
+            const city_graph = d3.select("#content-traffic-specific-vis").append("div")
+                .style("display", "none");
+            const station_graph = d3.select("#content-traffic-specific-vis").append("div")
+                .style("display", "none");
+            
+            // NOTE: disadvantage of having the same array of stations: all stations will appear even if they have no trips for the given filters
+            const stations_id_name_pairs = Object.entries(metadata.stations).map((s) => [s[0], s[1]["name"]]);
+            const stations_labels = stations_id_name_pairs.map((p) => p[1]);
+            const cities_labels = [...new Set(stations_id_name_pairs.map((p) => metadata.stations[p[0]].city))];
+            
+            const city_chart_attributes = tripBarSetup(city_graph.node(), {
+                width: 600,
+                height: 400,
+                margin: { top: 10, right: 30, bottom: 200, left: 50 },
+                labels: cities_labels,
+                logarithmic: true,
+                width_scale: 1.0,
+                x_label: "Cities",
+            });
+            const station_chart_attributes = tripBarSetup(station_graph.node(), {
+                width: 600,
+                height: 400,
+                margin: { top: 10, right: 30, bottom: 200, left: 50 },
+                labels: stations_labels,
+                logarithmic: false,
+                width_scale: 3.0,
+                x_label: "Stations",
+            });
+
+            // Cache the data for the graphs so that they can be used in the callbacks without data updates
+            let city_data = undefined;
+            let station_data = undefined;
+
+            d3.select("#content-traffic-sort").on("input", function() {
+                const stacked = d3.select("#content-traffic-stacked").property("checked");
+                city_chart_attributes.sortContent(this.value, d3.select("#content-traffic-sort-asc").property("checked"), stacked);
+                station_chart_attributes.sortContent(this.value, d3.select("#content-traffic-sort-asc").property("checked"), stacked);
+            });
+
+            d3.select("#content-traffic-sort-asc").on("input", function() {
+                const stacked = d3.select("#content-traffic-stacked").property("checked");
+                city_chart_attributes.sortContent(d3.select("#content-traffic-sort").node().value, this.checked, stacked);
+                station_chart_attributes.sortContent(d3.select("#content-traffic-sort").node().value, this.checked, stacked);
+            });
+
+            d3.select("#content-traffic-stacked").on("input", function() {
+                const sort_type = d3.select("#content-traffic-sort").node().value;
+                const sort_ascending = d3.select("#content-traffic-sort-asc").property("checked");
+                const stacked = d3.select("#content-traffic-stacked").property("checked");
+
+                if (filter.selectedCity !== undefined)
+                    tripBarUpdate(city_data, city_chart_attributes, sort_type, sort_ascending, false);
+                else if (filter.selectedStation !== undefined)
+                    tripBarUpdate(station_data, station_chart_attributes, sort_type, sort_ascending, stacked);
+            });
+
+            // Forcefully disable the stacked checkbox for the city graph
+            d3.select("#content-traffic-stacked").property("disabled", true)
+            d3.select("#content-traffic-stacked").property("checked", false)
+
+            function drawCityBars(data) {
+                // Create data for the city graph
+                const start_city_counts = {};
+                const end_city_counts = {};
+                data.forEach(function (d) {
+                    const start_city = metadata.stations[d.start_station_id].city || "Unknown";
+                    const end_city = metadata.stations[d.end_station_id].city || "Unknown";
+
+                    // Count outgoing trips for the start city
+                    start_city_counts[start_city] = (start_city_counts[start_city] || 0) + d.total_trips;
+
+                    // Count incoming trips for the end city
+                    end_city_counts[end_city] = (end_city_counts[end_city] || 0) + d.total_trips;
+                });
+
+                const city_counts_data = cities_labels.map(function(city) {
+                    return { label: city, value_out: start_city_counts[city] || 0, value_in: end_city_counts[city] || 0 };
+                });
+
+                city_data = city_counts_data;
+
+                const sort_type = d3.select("#content-traffic-sort").node().value;
+                const sort_ascending = d3.select("#content-traffic-sort-asc").property("checked");
+                const stacked = d3.select("#content-traffic-stacked").property("checked");
+
+                tripBarUpdate(city_data, city_chart_attributes, sort_type, sort_ascending, stacked);
+
+                // Mark the selected station/city in bold on the X axis
+                city_graph.selectAll(".x-axis .tick text")
+                    .style("font-weight", (d) => (d === filter.selectedCity) ? "bold" : "normal");
+
+                d3.select("#content-traffic-stacked").property("disabled", true);
+                content_title_selected.text(filter.selectedCity);
+            }
+
+            function drawStationBars(data) {
+                // Create data for the station graph
+                const start_station_counts = {};
+                const end_station_counts = {};
+                data.forEach(function(d) {
+                    start_station_counts[d.start_station_id] = (start_station_counts[d.start_station_id] || 0) + d.total_trips;
+                    end_station_counts[d.end_station_id] = (end_station_counts[d.end_station_id] || 0) + d.total_trips;
+                });
+
+                const station_counts_data = stations_id_name_pairs.map(function(p) {
+                    return { label: p[1], value_out: start_station_counts[p[0]] || 0, value_in: end_station_counts[p[0]] || 0 };
+                });
+
+                station_data = station_counts_data;
+
+                const sort_type = d3.select("#content-traffic-sort").node().value;
+                const sort_ascending = d3.select("#content-traffic-sort-asc").property("checked");
+                const stacked = d3.select("#content-traffic-stacked").property("checked");
+
+                tripBarUpdate(station_data, station_chart_attributes, sort_type, sort_ascending, stacked);
+
+                // Mark the selected station/city in bold on the X axis
+                station_graph.selectAll(".x-axis .tick text")
+                    .style("font-weight", (d) => (d === metadata.stations[filter.selectedStation].name) ? "bold" : "normal");
+
+                d3.select("#content-traffic-stacked").property("disabled", false);
+                content_title_selected.text(metadata.stations[filter.selectedStation].name);
+            }
+
+            return (data) => {
+                if (filter.selectedCity !== undefined) {
+                    station_graph.style("display", "none");
+                    city_graph.style("display", "block");
+                    drawCityBars(data);
+                }
+                
+                else if (filter.selectedStation !== undefined) {
+                    city_graph.style("display", "none");
+                    station_graph.style("display", "block");
+                    drawStationBars(data);
+                }
+            };
+        }
+
+        function drawTripData(metadata, data, update_callbacks) {
+            console.log("Loaded trip data");
+
+            const dateParser = d3.utcParse("%Y-%-m-%-d");
+
+            for (const d of data) {
+                d["start_date"] = dateParser(d["start_date"]);
+                d["end_date"] = dateParser(d["end_date"]);
+                d["duration_avg"] = +d["duration_avg"];
+                d["total_trips"] = +d["total_trips"];
+            }
+
+            function updateData() {
+                console.log("Filtering data...");
+
+                const cityTraversalFilter0 = (d) => metadata.stations[d.start_station_id].city == metadata.stations[d.end_station_id].city;  // within cities
+                const cityTraversalFilter1 = (d) => true;  // both
+                const cityTraversalFilter2 = (d) => metadata.stations[d.start_station_id].city != metadata.stations[d.end_station_id].city;  // between cities
+
+                const clientTypeFilter0 = (d) => d.subscription_type == "Customer";  // customer
+                const clientTypeFilter1 = (d) => true;  // both
+                const clientTypeFilter2 = (d) => d.subscription_type == "Subscriber";  // subscriber
+
+                let cityTraversalFilter = (filter.cityTraversal == 0) ? cityTraversalFilter0 : ((filter.cityTraversal == 1) ? cityTraversalFilter1 : cityTraversalFilter2);
+                let clientTypeFilter = (filter.clientType == 0) ? clientTypeFilter0 : ((filter.clientType == 1) ? clientTypeFilter1 : clientTypeFilter2);
+
+                let dataFiltered = data.filter((d) => {
+                    return d.start_date >= filter.timeStart
+                        && d.end_date <= filter.timeEnd
+                        && cityTraversalFilter(d)
+                        && clientTypeFilter(d)
+                        && (filter.selectedStation === undefined || d.start_station_id == filter.selectedStation || d.end_station_id == filter.selectedStation)
+                        && (filter.selectedCity === undefined || metadata.stations[d.start_station_id].city == filter.selectedCity || metadata.stations[d.end_station_id].city == filter.selectedCity);
+                });
+                console.log("Data filtered");
+
+                update_callbacks.forEach((callback) => callback(dataFiltered));
+            }
+
+            console.log("Initializing visualizations (trip data)");
+            data_update_callbacks.push(updateData)
+            updateData();
+        }
+
+        console.log("Loading data...");
+
+        trip_small_data = d3.csv("../data/trip_small.csv");
+        metadata_data = d3.json("../data/metadata.json");
+        
+        bay_area_geodata = d3.json("../data/Bay Area Counties.geojson")
+        mountain_view_geodata = d3.json("../data/mountain_view.geojson");
+        palo_alto_geodata = d3.json("../data/palo_alto.geojson");
+        redwood_city_geodata = d3.json("../data/redwood_city.geojson");
+        san_jose_geodata = d3.json("../data/san_jose.geojson");
+
+        metadata_data
+            .then((metadata) => {
+                setupFilters(metadata,
+                    ["#content-traffic-specific"],
+                    ["#content-traffic-specific"],
+                    ["#content-traffic-specific", "#content-availability"]
+                );
+
+                const trip_data_draw_callbacks = [visTrafficSpecific(metadata)];
+
+                trip_small_data
+                    .then((data) => drawTripData(metadata, data, trip_data_draw_callbacks))
+                    .catch(function(err){console.log(err)});
+            })
+            .catch(function(err){console.log(err)});
+        
+        Promise.all([metadata_data, bay_area_geodata, mountain_view_geodata, palo_alto_geodata, redwood_city_geodata, san_jose_geodata])
+            .then((datas) => {
+                let bay_area_geo = datas[1];
+                let city_geos = [
+                    {
+                        city: "Mountain View",
+                        geo: datas[2].features[0]
+                    },
+                    {
+                        city: "Palo Alto",
+                        geo: datas[3].features[0]
+                    },
+                    {
+                        city: "Redwood City",
+                        geo: datas[4].features[0]
+                    },
+                    {
+                        city: "San Jose",
+                        geo: datas[5].features[0]
+                    }
+                ];
+
+                setupMap(bay_area_geo, city_geos, datas[0].stations)
+            })
+
+    </script>
+</body>
+</html>
