@@ -21,6 +21,7 @@
     position: absolute;
     display: flex;
     justify-content: space-around;
+    background-color: whitesmoke;
 }
 
 #filters>div {
@@ -110,4 +111,22 @@
     grid-template-columns: 2fr 1fr;
     gap: 10px;
     grid-auto-rows: minmax(100px, auto);
+}
+
+/* Visualization 1 stuff */
+.station-pie {
+    cursor: pointer;
+}
+
+.station-pie:hover {
+    stroke: black;
+    stroke-width: 3px;
+    transition: 0.2s;
+    z-index: 100;
+}
+
+.selected-city-station-box {
+    position: absolute;
+    top: 15%;
+    right: 10%;
 }
