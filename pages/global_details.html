@@ -56,6 +56,7 @@
     <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
     <script src="http://d3js.org/d3.v6.js"></script>
     <script src="base.js"></script>
+    <script src="charts/client_bar.js"></script>
     <script>
 
         // TODO: ascending checkbox not on by default
@@ -295,50 +296,7 @@
         }
 
         function visClientTotalTrips(metadata) {
-            // Set up SVG dimensions
-            const margin = { top: 20, right: 20, bottom: 70, left: 70 };
-            const w = 500 - margin.left - margin.right;
-            const h = 300 - margin.top - margin.bottom;
-
-            const svg = d3.select("#content-client-total-trips-vis")
-                .append("svg")
-                .attr("width", w + margin.left + margin.right)
-                .attr("height", h + margin.top + margin.bottom)
-                .append("g")
-                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-
-            const x_axis_svg = svg.append("g")
-                .attr("transform", "translate(0," + h + ")");
-            const y_axis_svg = svg.append("g");
-            const title_svg = svg.append("text");
-            const title_y_svg = svg.append("text");
-
-            // Color palette
-            const color = d3.scaleOrdinal()
-                .domain(["Customer", "Subscriber"])
-                .range(["#FF7F0E", '#1F77B4']);
-
-            // Add legend
-            const legend = svg.selectAll(".legend")
-                .data(["Customer", "Subscriber"])
-                .join("g")
-                .attr("class", "legend")
-                .attr("transform", function(d, i) {
-                    return "translate(0," + i * 20 + ")";
-                });
-
-            legend.append("rect")
-                .attr("x", w - 18)
-                .attr("width", 18)
-                .attr("height", 18)
-                .style("fill", (d) => color(d));
-
-            legend.append("text")
-                .attr("x", w - 24)
-                .attr("y", 9)
-                .attr("dy", ".35em")
-                .style("text-anchor", "end")
-                .text((d) => d);
+            const chart_attributes = clientBarSetup("#content-client-total-trips-vis", 500, 300, 20, 20, 70, 70);
 
             return (data) => {
                 // Extract the subscription_type column
@@ -352,67 +310,33 @@
                     labelCounts[label] = (labelCounts[label] || 0) + 1;
                 });
 
-                let maxCount = Math.max(...Object.values(labelCounts));
-
-                // Create rectangles based on the counts
-                var rects = svg.selectAll("rect.data")
-                    .data(Object.entries(labelCounts))
-                    .join("rect")
-                    .classed("data", true)
-                    .attr("x", function (d, i) {
-                        return (i * (w / Object.keys(labelCounts).length));
-                    })  
-                    .attr("y", function (d) {
-                        return h - (h * d[1] / maxCount);
-                    })
-                    .attr("width", (w / Object.keys(labelCounts).length - 1))
-                    .attr("height", function (d) {
-                        return (h * d[1] / maxCount);
-                    })
-                    .attr("fill", function (d) {
-                        return color(d[0]);
-                    });
-
-                // Create x and y scales
-                var xScale = d3.scaleBand()
-                    .domain(d3.range(Object.keys(labelCounts).length))
-                    .range([0, w])
-                    .padding(0.1);
-
-                var yScale = d3.scaleLinear()
-                    .domain([0, maxCount])
-                    .range([h, 0]);
-
-                // Create x and y axes
-                var xAxis = d3.axisBottom(xScale);
-                var yAxis = d3.axisLeft(yScale);
-
-                // Append x and y axes to the SVG
-                x_axis_svg.call(xAxis);
-                y_axis_svg.call(yAxis);
-
-                // Add title to the chart
-                title_svg
-                    .attr("x", w / 2)
-                    .attr("y", -margin.top / 2.3)
-                    .attr("text-anchor", "middle")
-                    .style("font-size", "16px")
-                    .text("Subscription Types Occurrences");
-
-                // Add Y-axis title
-                title_y_svg
-                    .attr("transform", "rotate(-90)")
-                    .attr("y", -margin.left + 10)
-                    .attr("x", -h / 2)
-                    .attr("dy", "1em")
-                    .style("text-anchor", "middle")
-                    .style("font-size", "14px")
-                    .text("Count");
+                clientBarUpdate(Object.entries(labelCounts), chart_attributes);
             };
         }
 
         function visClientLengthTrips(metadata) {
-            return () => null;
+            const chart_attributes = clientBarSetup("#content-client-length-trips-vis", 500, 300, 20, 20, 70, 70);
+
+            return (data) => {
+                // Group data by subscription type and sum the duration for each group
+                const groupedData = d3.group(data, d => d.subscription_type);
+
+                // Calculate total duration for each subscription type
+                const totalDurationBySubscription = new Map();
+
+                groupedData.forEach((value, key) => {
+                    const totalDuration = d3.sum(value, d => d.duration_avg);
+                    totalDurationBySubscription.set(key, totalDuration);
+                });
+
+                // Create a simple array with values as the ratio of totalDurationBySubscription to the count of instances
+                const ratioArray = Array.from(groupedData.keys()).map(key => totalDurationBySubscription.get(key) / groupedData.get(key).length);
+
+                // Convert ratioArray to a Map
+                const ratioMap = new Map(Array.from(groupedData.keys()).map((key, i) => [key, ratioArray[i]]));
+
+                clientBarUpdate(Array.from(ratioMap.entries()), chart_attributes);
+            };
         }
 
         function drawTripData(metadata, data, update_callbacks) {
@@ -468,7 +392,7 @@
                 );
 
                 const trip_data_draw_callbacks = [
-                    // visBikeUsage(),
+                    visBikeUsage(metadata),
                     visTraffic(metadata),
                     visClientTotalTrips(metadata),
                     visClientLengthTrips(metadata)
