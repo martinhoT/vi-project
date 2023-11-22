@@ -39,7 +39,7 @@ function tripBarSetup(element, att) {
     // Append the svg object to the respective section
     const outer_svg = graph.append("svg")
         .classed("outer-svg", true)
-        .attr("width", w + att.margin.left + att.margin.right)
+        .attr("width", w + att.margin.left + att.margin.right + 150) // add some more space for the legend
         .attr("height", h + att.margin.top + att.margin.bottom)
         .style("top", "0px")
         .append("g")
@@ -123,8 +123,16 @@ function tripBarSetup(element, att) {
             .range(['#e41a1c', '#377eb8']);
 
     // Add Legend
-    var legend = outer_svg.append("g")
-            .attr("transform", "translate(" + (w - 100) + "," + 20 + ")")
+    const legend_group = outer_svg.append("g")
+        .attr("transform", "translate(" + (w + att.margin.left + att.margin.right) + "," + 20 + ")");
+    
+    legend_group.append("rect")
+        .attr("fill", "white")
+        .attr("width", 120)
+        .attr("height", 50)
+        .attr("z-index", 25);
+
+    const legend = legend_group
             .selectAll("g")
             .data(color.domain().slice().reverse())
             .enter().append("g")
@@ -176,7 +184,7 @@ function tripBarSetup(element, att) {
 }
 
 // bar_data is expected to be an array of objects {label: ..., value_in: ..., value_out: ...}
-function tripBarUpdate(bar_data, chart_attributes) {
+function tripBarUpdate(bar_data, chart_attributes, sort_type, sort_ascending) {
     const graph = chart_attributes.graph;
     const w = chart_attributes.w;
     const h = chart_attributes.h;
@@ -199,7 +207,7 @@ function tripBarUpdate(bar_data, chart_attributes) {
     scrollable_div_svg.select("g.x-axis")
         .call(d3.axisBottom(x).tickSize(0))
         .selectAll("text")
-            .attr("transform", "translate(0,5), rotate(-90)")
+            .attr("transform", "translate(-15,5), rotate(-90)")
             .style("text-anchor", "end");
 
     // Update Y axis
@@ -276,5 +284,5 @@ function tripBarUpdate(bar_data, chart_attributes) {
         });
 
     // Default sort
-    sortContent("alphabetic", true);
+    sortContent(sort_type, sort_ascending);
 }

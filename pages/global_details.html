@@ -158,8 +158,11 @@
                     return { label: city, value_out: start_city_counts[city] || 0, value_in: end_city_counts[city] || 0 };
                 });
 
-                tripBarUpdate(city_counts_data, city_chart_attributes);
-                tripBarUpdate(station_counts_data, station_chart_attributes);
+                const sort_type = d3.select("#content-traffic-sort").node().value;
+                const sort_ascending = d3.select("#content-traffic-sort-asc").property("checked");
+
+                tripBarUpdate(city_counts_data, city_chart_attributes, sort_type, sort_ascending);
+                tripBarUpdate(station_counts_data, station_chart_attributes, sort_type, sort_ascending);
             };
         }
 
