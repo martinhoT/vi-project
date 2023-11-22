@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bikes Usage Histogram</title>
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+</head>
+
+<body>
+    <!-- Create a div where the graph will take place -->
+    <div id="my_dataviz"></div>
+
+    <p>
+        <label># bins</label>
+        <input type="number" min="1" max="100" step="1" value="20" id="nBin">
+    </p>
+
+    <script>
+        // set the dimensions and margins of the graph
+        const margin = { top: 10, right: 30, bottom: 30, left: 80 },
+            width = 460 - margin.left - margin.right,
+            height = 400 - margin.top - margin.bottom;
+
+        // append the svg object to the body of the page
+        const svg = d3.select("#my_dataviz")
+            .append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform", `translate(${margin.left},${margin.top})`);
+
+        d3.csv("bikes_usage.csv").then(function (data) {
+            // Aggregate total duration for each bike
+            const aggregatedData = d3.rollup(data, v => d3.sum(v, d => +d.total_duration), d => +d.bike_id);
+
+            let processedData = Array.from(aggregatedData, ([bike, totalDuration]) => ({
+                bike: bike,
+                total_duration: totalDuration
+            }));
+
+            // Sort the data by bike ID
+            processedData.sort((a, b) => a.bike - b.bike);
+
+            // Get the number of bins from the input field
+            const numBins = 18
+
+            // Create a histogram function
+            const histogram = d3.histogram()
+                .value(d => d.bike)
+                .domain([d3.min(processedData, d => d.bike), d3.max(processedData, d => d.bike)])
+                .thresholds(numBins);
+
+            // Bin the data
+            const bins = histogram(processedData);
+
+            // Create the scales
+            const xScale = d3.scaleLinear()
+                .domain([d3.min(processedData, d => d.bike), d3.max(processedData, d => d.bike)])
+                .range([0, width]);
+
+            const maxTotalDuration = d3.max(bins, bin => d3.sum(bin, d => d.total_duration));
+
+            const yScale = d3.scaleLinear()
+                .domain([0, maxTotalDuration])
+                .range([height, 0]);
+
+            // Create the bars
+            svg.selectAll("rect")
+                .data(bins)
+                .enter()
+                .append("rect")
+                .attr("x", d => xScale(d.x0))
+                .attr("y", d => yScale(d3.sum(d, v => v.total_duration)))  // Use d3.sum to get the total_duration for each bin
+                .attr("width", d => xScale(d.x1) - xScale(d.x0))
+                .attr("height", d => height - yScale(d3.sum(d, v => v.total_duration)))  // Adjust the height based on total_duration
+                .style("fill", "#69b3a2");
+
+
+
+
+            // Add x-axis
+            svg.append("g")
+                .attr("transform", `translate(0, ${height})`)
+                .call(d3.axisBottom(xScale));
+
+            // Add y-axis
+            svg.append("g")
+                .call(d3.axisLeft(yScale));
+
+        });
+    </script>
+
+</body>
+
+</html>
