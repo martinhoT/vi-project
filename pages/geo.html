@@ -26,6 +26,8 @@
     <script src="base.js"></script>
     <script>
 
+        // TODO: city stroke-width doesn't scale with zoom
+
         let data_update_callbacks = [];
         d3.select("#content").on("data-update", () => {
             data_update_callbacks.forEach((callback) => callback());

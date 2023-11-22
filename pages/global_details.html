@@ -30,6 +30,12 @@
 
                 <input type="checkbox" name="content-traffic-sort-asc" id="content-traffic-sort-asc" checked>
                 Ascending
+
+                <input type="checkbox" name="content-traffic-stacked" id="content-traffic-stacked" disabled>
+                Stacked
+                <span style="cursor: help" data-toggle="tooltip" data-placement="top" title="Only makes sense for the Stations chart, the Cities one has a logarithmic scale on the Y axis">
+                    ⓘ
+                </span>
             </p>
 
             <div id="content-traffic-vis"></div>
@@ -98,15 +104,30 @@
                 x_label: "Stations",
             });
 
+            // Cache the data for the graphs so that they can be used in the callbacks without data updates
+            let city_data = undefined;
+            let station_data = undefined;
+
             d3.select("#content-traffic-sort").on("input", function() {
-                city_chart_attributes.sortContent(this.value, d3.select("#content-traffic-sort-asc").property("checked"));
-                station_chart_attributes.sortContent(this.value, d3.select("#content-traffic-sort-asc").property("checked"));
+                const stacked = d3.select("#content-traffic-stacked").property("checked");
+                city_chart_attributes.sortContent(this.value, d3.select("#content-traffic-sort-asc").property("checked"), stacked);
+                station_chart_attributes.sortContent(this.value, d3.select("#content-traffic-sort-asc").property("checked"), stacked);
             });
 
             d3.select("#content-traffic-sort-asc").on("input", function() {
-                city_chart_attributes.sortContent(d3.select("#content-traffic-sort").node().value, this.checked);
-                station_chart_attributes.sortContent(d3.select("#content-traffic-sort").node().value, this.checked);
+                const stacked = d3.select("#content-traffic-stacked").property("checked");
+                city_chart_attributes.sortContent(d3.select("#content-traffic-sort").node().value, this.checked, stacked);
+                station_chart_attributes.sortContent(d3.select("#content-traffic-sort").node().value, this.checked, stacked);
             });
+
+            d3.select("#content-traffic-stacked").on("input", function() {
+                const sort_type = d3.select("#content-traffic-sort").node().value;
+                const sort_ascending = d3.select("#content-traffic-sort-asc").property("checked");
+                const stacked = d3.select("#content-traffic-stacked").property("checked");
+
+                tripBarUpdate(city_data, city_chart_attributes, sort_type, sort_ascending, false);
+                tripBarUpdate(station_data, station_chart_attributes, sort_type, sort_ascending, stacked);
+            })
 
             // Input options callbacks
             d3.select("#content-traffic-class").on("change", function() {
@@ -115,17 +136,23 @@
                     case "city":
                         station_graph.style("display", "none")
                         city_graph.style("display", "block")
+                        d3.select("#content-traffic-stacked").property("disabled", true)
                         break;
                 
                     case "station":
                         city_graph.style("display", "none")
                         station_graph.style("display", "block")
+                        d3.select("#content-traffic-stacked").property("disabled", false)
                         break;
 
                     default:
                         console.log("ERROR: invalid class for traffic visualization")
                 }
             });
+
+            // Forcefully disable the stacked checkbox for the city graph
+            d3.select("#content-traffic-stacked").property("disabled", true)
+            d3.select("#content-traffic-stacked").property("checked", false)
 
             return (data) => {
                 // Create data for the station graph
@@ -158,11 +185,15 @@
                     return { label: city, value_out: start_city_counts[city] || 0, value_in: end_city_counts[city] || 0 };
                 });
 
+                city_data = city_counts_data;
+                station_data = station_counts_data;
+
                 const sort_type = d3.select("#content-traffic-sort").node().value;
                 const sort_ascending = d3.select("#content-traffic-sort-asc").property("checked");
+                const stacked = d3.select("#content-traffic-stacked").property("checked");
 
-                tripBarUpdate(city_counts_data, city_chart_attributes, sort_type, sort_ascending);
-                tripBarUpdate(station_counts_data, station_chart_attributes, sort_type, sort_ascending);
+                tripBarUpdate(city_data, city_chart_attributes, sort_type, sort_ascending, stacked);
+                tripBarUpdate(station_data, station_chart_attributes, sort_type, sort_ascending, stacked);
             };
         }
 

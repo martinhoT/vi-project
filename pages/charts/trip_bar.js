@@ -65,7 +65,7 @@ function tripBarSetup(element, att) {
         .range([0, totalWidth])
         .padding([0.2]);
 
-    function sortContent(sort_type, sort_ascending) {
+    function sortContent(sort_type, sort_ascending, stacked = false) {
         let sort_function = undefined;
 
         switch (sort_type) {
@@ -111,7 +111,7 @@ function tripBarSetup(element, att) {
 
         sorted_in
             .transition()
-            .attr("x", (d) => x(truncateLabel(d.label)) + x.bandwidth() / 2);
+            .attr("x", (d) => x(truncateLabel(d.label)) + ((stacked) ? 0 : x.bandwidth() / 2));
         sorted_out
             .transition()
             .attr("x", (d) => x(truncateLabel(d.label)));
@@ -184,7 +184,7 @@ function tripBarSetup(element, att) {
 }
 
 // bar_data is expected to be an array of objects {label: ..., value_in: ..., value_out: ...}
-function tripBarUpdate(bar_data, chart_attributes, sort_type, sort_ascending) {
+function tripBarUpdate(bar_data, chart_attributes, sort_type, sort_ascending, stacked) {
     const graph = chart_attributes.graph;
     const w = chart_attributes.w;
     const h = chart_attributes.h;
@@ -196,9 +196,9 @@ function tripBarUpdate(bar_data, chart_attributes, sort_type, sort_ascending) {
     const sortContent = chart_attributes.sortContent;
     const truncateLabel = chart_attributes.truncateLabel;
 
-    // TODO: this is if the bar chart is stacked!
-    // const max_count = d3.max(bar_data, function(d) { return d.value_in + d.value_out; });
-    const max_count = d3.max(bar_data, function(d) { return Math.max(d.value_in, d.value_out); });
+    const max_count = (stacked)
+        ? d3.max(bar_data, function(d) { return d.value_in + d.value_out; })
+        : d3.max(bar_data, function(d) { return Math.max(d.value_in, d.value_out); });
 
     const scrollable_div_svg = graph.select("svg.scrollable-svg");
     const outer_svg = graph.select("svg.outer-svg");
@@ -211,20 +211,17 @@ function tripBarUpdate(bar_data, chart_attributes, sort_type, sort_ascending) {
             .style("text-anchor", "end");
 
     // Update Y axis
-    let y = undefined;
-    if (logarithmic) {
-        y = d3.scaleLog()
+    const y = (logarithmic)
+        ? d3.scaleLog()
             .base(10) // You can adjust the base as needed
             .domain([1, 2 * max_count])
-            .range([h, 0]);
-    }
-    else {
-        y = d3.scaleLinear()
+            .range([h, 0])
+        : d3.scaleLinear()
             .domain([0, max_count])
             .range([h, 0]);
-    }
 
     outer_svg.select("g.y-axis")
+        .transition()
         .call(d3.axisLeft(y));
 
     // Show the bars for outgoing trips
@@ -232,14 +229,10 @@ function tripBarUpdate(bar_data, chart_attributes, sort_type, sort_ascending) {
         .selectAll("rect")
         .data(bar_data)
         .join("rect")
-        .attr("x", (d) => {
-            if (x(truncateLabel(d.label)) == undefined)
-                debugger;
-            return x(truncateLabel(d.label))
-        })
-        .attr("y", (d) => y(d.value_out) + margin.top)
-        .attr("width", x.bandwidth() / 2)
-        .attr("height", (d) => h - y(d.value_out))
+        .attr("x", (d) => x(truncateLabel(d.label)))
+        .attr("y", (d) => y(d.value_out + ((stacked) ? d.value_in : 0)) + margin.top)
+        .attr("width", x.bandwidth() / (2 - stacked))  // evil
+        .attr("height", (d) => h - y(d.value_out + ((stacked) ? d.value_in : 0)))
         .attr("fill", color("start"))
         .on("mouseover", function (event, d) {
             tooltip.transition()
@@ -261,12 +254,10 @@ function tripBarUpdate(bar_data, chart_attributes, sort_type, sort_ascending) {
         .data(bar_data)
         .join("rect")
         .attr("x", (d) => {
-            if (x(truncateLabel(d.label)) == undefined)
-                debugger;
-            return x(truncateLabel(d.label)) + x.bandwidth() / 2
-        })
+            return x(truncateLabel(d.label)) + ((stacked) ? 0 : x.bandwidth() / 2)}
+            )
         .attr("y", (d) => y(d.value_in) + margin.top)
-        .attr("width", x.bandwidth() / 2)
+        .attr("width", x.bandwidth() / (2 - stacked))
         .attr("height", (d) => h - y(d.value_in))
         .attr("fill", color("end"))
         .on("mouseover", function (event, d) {
@@ -284,5 +275,5 @@ function tripBarUpdate(bar_data, chart_attributes, sort_type, sort_ascending) {
         });
 
     // Default sort
-    sortContent(sort_type, sort_ascending);
+    sortContent(sort_type, sort_ascending, stacked);
 }
