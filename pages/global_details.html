@@ -57,6 +57,7 @@
     <script src="http://d3js.org/d3.v6.js"></script>
     <script src="base.js"></script>
     <script src="charts/client_bar.js"></script>
+    <script src="charts/trip_bar.js"></script>
     <script>
 
         // TODO: ascending checkbox not on by default
@@ -69,62 +70,43 @@
         });
 
         function visTraffic(metadata) {
-            // Set the dimensions and margins of the graph
-            const margin = {top: 10, right: 30, bottom: 200, left: 50};
-            const width = 600 - margin.left - margin.right;
-            const totalWidth = 3 * width;
-            const height = 400 - margin.top - margin.bottom;
-
             const city_graph = d3.select("#content-traffic-vis").append("div");
             const station_graph = d3.select("#content-traffic-vis").append("div")
                 .style("display", "none");  // hidden by default
-
-            // Create a scrollable div which will contain the chart and X axis
-            const station_scrollable_div = station_graph.append("div")
-                    .style("overflow-x", "scroll")
-                    .style("-webkit-overflow-scrolling", "touch")
-                    .style("position", "absolute")
-                    .style("z-index", 1)
-                    .style("width", width + "px")
-                    .style("height", (height + margin.bottom + margin.top) + "px")
-                    .style("left", "60px");
-
-            const station_scrollable_div_svg = station_scrollable_div.append("svg")
-                    .attr("width", totalWidth)
-                    .attr("height", height + margin.bottom + margin.top)
-                    .style("display", "block");
-
-            // Append the svg object to the respective section
-            const station_outer_svg = station_graph
-                .append("svg")
-                .attr("width", width + margin.left + margin.right)
-                .attr("height", height + margin.top + margin.bottom)
-                .style("top", "0px")
-                .append("g")
-                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-
-            const x_axis_svg = station_scrollable_div_svg.append("g")
-                    .classed("station-x-axis", true);
-            const y_axis_svg = station_outer_svg.append("g");
-            const bars_out_svg = station_scrollable_div_svg.append("g")
-                    .classed("g-out", true);
-            const bars_in_svg = station_scrollable_div_svg.append("g")
-                    .classed("g-in", true);
-
+            
             // NOTE: disadvantage of having the same array of stations: all stations will appear even if they have no trips for the given filters
-            const stations_id_name_pairs = Object.entries(metadata["stations"]).map((s) => [s[0], s[1]["name"]]);
-            const stations_names = stations_id_name_pairs.map((p) => p[1]);
-            const stations_ids = stations_id_name_pairs.map((p) => p[0]);
+            const stations_id_name_pairs = Object.entries(metadata.stations).map((s) => [s[0], s[1]["name"]]);
+            const stations_labels = stations_id_name_pairs.map((p) => p[1]);
+            const cities_labels = [...new Set(stations_id_name_pairs.map((p) => metadata.stations[p[0]].city))];
+            
+            const city_chart_attributes = tripBarSetup(city_graph.node(), {
+                width: 600,
+                height: 400,
+                margin: { top: 10, right: 30, bottom: 200, left: 50 },
+                labels: cities_labels,
+                logarithmic: true,
+                width_scale: 1.0,
+                x_label: "Cities",
+            });
+            const station_chart_attributes = tripBarSetup(station_graph.node(), {
+                width: 600,
+                height: 400,
+                margin: { top: 10, right: 30, bottom: 200, left: 50 },
+                labels: stations_labels,
+                logarithmic: false,
+                width_scale: 3.0,
+                x_label: "Stations",
+            });
 
-            // Create X scale (necessary for the sorting methods)
-            const x_max_length = 24;
-            function truncate_station_name(station_name) {
-                return (station_name.length > x_max_length) ? station_name.slice(0, x_max_length - 3) + "..." : station_name;
-            }
-            const x = d3.scaleBand()
-                .domain(stations_names.map(truncate_station_name))
-                .range([0, totalWidth])
-                .padding([0.2]);
+            d3.select("#content-traffic-sort").on("input", function() {
+                city_chart_attributes.sortContent(this.value, d3.select("#content-traffic-sort-asc").property("checked"));
+                station_chart_attributes.sortContent(this.value, d3.select("#content-traffic-sort-asc").property("checked"));
+            });
+
+            d3.select("#content-traffic-sort-asc").on("input", function() {
+                city_chart_attributes.sortContent(d3.select("#content-traffic-sort").node().value, this.checked);
+                station_chart_attributes.sortContent(d3.select("#content-traffic-sort").node().value, this.checked);
+            });
 
             // Input options callbacks
             d3.select("#content-traffic-class").on("change", function() {
@@ -145,149 +127,39 @@
                 }
             });
 
-            function sortContent(sort_type, sort_ascending) {
-                let sort_function = undefined;
-
-                switch (sort_type) {
-                    case "alphabetic":
-                        sort_function = (a, b) => sort_ascending ? d3.ascending(a.station, b.station) : d3.descending(a.station, b.station)
-                        break;
-                    
-                    case "total_trips":
-                        sort_function = (a, b) => sort_ascending ? d3.ascending(a.value_in + a.value_out, b.value_in + b.value_out) : d3.descending(a.value_in + a.value_out, b.value_in + b.value_out);
-                        break;
-                    
-                    case "incoming_trips":
-                        sort_function = (a, b) => sort_ascending ? d3.ascending(a.value_in, b.value_in) : d3.descending(a.value_in, b.value_in);
-                        break;
-
-                    case "outgoing_trips":
-                        sort_function = (a, b) => sort_ascending ? d3.ascending(a.value_out, b.value_out) : d3.descending(a.value_out, b.value_out);
-                        break;
-                    
-                    default:
-                        console.log("ERROR: invalid sort type for traffic visualization");
-                        return;
-                }
-
-                sorted_in = station_scrollable_div_svg
-                    .selectAll("g.g-in")
-                    .selectAll("rect")
-                    .sort(sort_function);
-                
-                sorted_out = station_scrollable_div_svg
-                    .selectAll("g.g-out")
-                    .selectAll("rect")
-                    .sort(sort_function);
-
-                // It doesn't matter whether we use sorted_in or sorted_out
-                stations_names_sorted = sorted_out.data().map((d) => truncate_station_name(d.station));
-
-                x.domain(stations_names_sorted)
-                d3.select(".station-x-axis")
-                    .transition()
-                    .duration(1000)
-                    .call(d3.axisBottom(x));
-
-                sorted_in
-                    .transition()
-                    .attr("x", (d, i) => x(truncate_station_name(d.station)) + x.bandwidth() / 2);
-                sorted_out
-                    .transition()
-                    .attr("x", (d, i) => x(truncate_station_name(d.station)));
-            }
-
-            d3.select("#content-traffic-sort").on("input", function() {
-                sortContent(this.value, d3.select("#content-traffic-sort-asc").property("checked"));
-            });
-
-            d3.select("#content-traffic-sort-asc").on("input", function() {
-                sortContent(d3.select("#content-traffic-sort").node().value, this.checked);
-            });
-
-            // Color palette
-            const color = d3.scaleOrdinal()
-                    .domain(["start", "end"])
-                    .range(['#e41a1c', '#377eb8']);
-
-            // Add Legend
-            var legend = station_outer_svg.append("g")
-                    .attr("transform", "translate(" + (width - 100) + "," + 20 + ")")
-                    .selectAll("g")
-                    .data(color.domain().slice().reverse())
-                    .enter().append("g")
-                    .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
-
-            legend.append("rect")
-                .attr("width", 18)
-                .attr("height", 18)
-                .attr("fill", color);
-
-            legend.append("text")
-                .attr("x", 24)
-                .attr("y", 9)
-                .attr("dy", ".35em")
-                .style("text-anchor", "start")
-                .text(function(d) { return d === "start" ? "Outgoing" : "Incoming"; });
-
             return (data) => {
-                // Data processing for outgoing trips
+                // Create data for the station graph
                 const start_station_counts = {};
-                data.forEach(function(d) {
-                    start_station_counts[d.start_station_id] = (start_station_counts[d.start_station_id] || 0) + d.total_trips;
-                });
-                
-                // Data processing for incoming trips
                 const end_station_counts = {};
                 data.forEach(function(d) {
+                    start_station_counts[d.start_station_id] = (start_station_counts[d.start_station_id] || 0) + d.total_trips;
                     end_station_counts[d.end_station_id] = (end_station_counts[d.end_station_id] || 0) + d.total_trips;
                 });
 
-                let counts_data = stations_id_name_pairs.map(function(p) {
-                    return { station: p[1], value_out: start_station_counts[p[0]] || 0, value_in: end_station_counts[p[0]] || 0 };
+                const station_counts_data = stations_id_name_pairs.map(function(p) {
+                    return { label: p[1], value_out: start_station_counts[p[0]] || 0, value_in: end_station_counts[p[0]] || 0 };
                 });
 
-                // Add X axis
-                x_axis_svg
-                    .attr("transform", "translate(0," + (height + margin.top) + ")")
-                    .call(d3.axisBottom(x).tickSize(0))
-                    .selectAll("text")
-                        .attr("transform", "translate(0,5), rotate(-90)")
-                        .style("text-anchor", "end");
+                // Create data for the city graph
+                const start_city_counts = {};
+                const end_city_counts = {};
+                data.forEach(function (d) {
+                    const start_city = metadata.stations[d.start_station_id].city || "Unknown";
+                    const end_city = metadata.stations[d.end_station_id].city || "Unknown";
 
-                // Add Y axis
-                const y = d3.scaleLinear()
-                    .domain([0, d3.max(Object.values(start_station_counts).concat(Object.values(end_station_counts)))])
-                    .range([height, 0]);
+                    // Count outgoing trips for the start city
+                    start_city_counts[start_city] = (start_city_counts[start_city] || 0) + d.total_trips;
 
-                y_axis_svg.call(d3.axisLeft(y));
+                    // Count incoming trips for the end city
+                    end_city_counts[end_city] = (end_city_counts[end_city] || 0) + d.total_trips;
+                });
 
-                // Show the bars for outgoing trips
-                bars_out_svg
-                    .selectAll("rect")
-                    .data(counts_data)
-                    .join("rect")
-                    .attr("x", function(d, i) { return x(truncate_station_name(d.station)); })
-                    .attr("y", function(d) { return y(d.value_out) + margin.top; })
-                    .attr("width", x.bandwidth() / 2)
-                    .attr("height", function(d) { return height - y(d.value_out); })
-                    .attr("fill", function(d) { return color("start"); });
+                const city_counts_data = cities_labels.map(function(city) {
+                    return { label: city, value_out: start_city_counts[city] || 0, value_in: end_city_counts[city] || 0 };
+                });
 
-                // Show the bars for incoming trips
-                bars_in_svg
-                    .selectAll("rect")
-                    .data(counts_data)
-                    .join("rect")
-                    .attr("x", function(d, i) { return x(truncate_station_name(d.station)) + x.bandwidth() / 2; })
-                    .attr("y", function(d) { return y(d.value_in) + margin.top; })
-                    .attr("width", x.bandwidth() / 2)
-                    .attr("height", function(d) { return height - y(d.value_in); })
-                    .attr("fill", function(d) { return color("end"); });
-
-                // Default sort
-                sortContent("alphabetic", true);
-                
-                station_scrollable_div.node().scrollBy(0, 0);
+                tripBarUpdate(city_counts_data, city_chart_attributes);
+                tripBarUpdate(station_counts_data, station_chart_attributes);
             };
         }
 
@@ -353,10 +225,10 @@
 
             function updateData() {
                 console.log("Filtering data...");
-                // TODO: include city information on trips, only have station
-                const cityTraversalFilter0 = (d) => d.start_station_id == d.end_station_id;  // within cities
+
+                const cityTraversalFilter0 = (d) => metadata.stations[d.start_station_id].city == metadata.stations[d.end_station_id].city;  // within cities
                 const cityTraversalFilter1 = (d) => true;  // both
-                const cityTraversalFilter2 = (d) => d.start_station_id != d.end_station_id;  // between cities
+                const cityTraversalFilter2 = (d) => metadata.stations[d.start_station_id].city != metadata.stations[d.end_station_id].city;  // between cities
 
                 const clientTypeFilter0 = (d) => d.subscription_type == "Customer";  // customer
                 const clientTypeFilter1 = (d) => true;  // both
@@ -366,7 +238,10 @@
                 let clientTypeFilter = (filter.clientType == 0) ? clientTypeFilter0 : ((filter.clientType == 1) ? clientTypeFilter1 : clientTypeFilter2);
 
                 let dataFiltered = data.filter((d) => {
-                    return d.start_date >= filter.timeStart && d.end_date <= filter.timeEnd && cityTraversalFilter(d) && clientTypeFilter(d);
+                    return d.start_date >= filter.timeStart
+                        && d.end_date <= filter.timeEnd
+                        && cityTraversalFilter(d)
+                        && clientTypeFilter(d);
                 });
                 console.log("Data filtered");
 

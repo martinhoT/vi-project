@@ -59,13 +59,13 @@ function clientBarSetup(element, width, height, top, right, bottom, left) {
 
 // bar_data is expected to be an array of tuples where the first element is the client type and the second is the value
 function clientBarUpdate(bar_data, chart_attributes) {
-    let svg = chart_attributes.svg;
-    let w = chart_attributes.w;
-    let h = chart_attributes.h;
-    let margin = chart_attributes.margin;
-    let color = chart_attributes.color;
+    const svg = chart_attributes.svg;
+    const w = chart_attributes.w;
+    const h = chart_attributes.h;
+    const margin = chart_attributes.margin;
+    const color = chart_attributes.color;
 
-    let maxCount = Math.max(...bar_data.map(d => d[1]));
+    const max_count = Math.max(...bar_data.map(d => d[1]));
 
     // Create rectangles based on the counts
     svg.selectAll("rect.data")
@@ -76,11 +76,11 @@ function clientBarUpdate(bar_data, chart_attributes) {
             return (i * (w / bar_data.length));
         })  
         .attr("y", function (d) {
-            return h - (h * d[1] / maxCount);
+            return h - (h * d[1] / max_count);
         })
         .attr("width", (w / bar_data.length - 1))
         .attr("height", function (d) {
-            return (h * d[1] / maxCount);
+            return (h * d[1] / max_count);
         })
         .attr("fill", function (d) {
             return color(d[0]);
@@ -93,7 +93,7 @@ function clientBarUpdate(bar_data, chart_attributes) {
         .padding(0.1);
 
     var yScale = d3.scaleLinear()
-        .domain([0, maxCount])
+        .domain([0, max_count])
         .range([h, 0]);
 
     // Create x and y axes
