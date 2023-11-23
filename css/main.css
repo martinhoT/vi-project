@@ -39,7 +39,7 @@ body {
 
 .filters-header-title {
     position: absolute;
-    bottom: 76px;
+    bottom: 70px;
     left: 10%;
     font-size: 24px;
     background-color: whitesmoke;
@@ -63,8 +63,9 @@ body {
     position: relative;
 }
 
-.filter-group>div {
+.filter-group > div {
     display: inline-block;
+    vertical-align: middle;
 }
 
 .slider-3-toggle {
@@ -75,7 +76,7 @@ body {
     background-color: lightgray;
 }
 
-.slider-3-toggle>div {
+.slider-3-toggle > div {
     position: absolute;
 }
 

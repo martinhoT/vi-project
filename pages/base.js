@@ -29,23 +29,28 @@ $.get("bases/nav.html", function(data) {
     
     $("#nav").ready(function() {
         for (const loc of ["intro", "geo", "cs-details", "global-details", "insights", "about"]) {
-            $("#nav-" + loc).on("click", function() {
-                if (filter.timeStart !== undefined)
-                    currentURL.searchParams.set("timeStart", filter.timeStart.getTime());
-                if (filter.timeEnd !== undefined)
-                    currentURL.searchParams.set("timeEnd", filter.timeEnd.getTime());
-                if (filter.selectedCity !== undefined)
-                    currentURL.searchParams.set("selectedCity", filter.selectedCity);
-                else
-                    currentURL.searchParams.delete("selectedCity");
-                if (filter.selectedStation !== undefined)
-                    currentURL.searchParams.set("selectedStation", filter.selectedStation);
-                else
-                    currentURL.searchParams.delete("selectedStation");
-                currentURL.searchParams.set("cityTraversal", filter.cityTraversal);
-                currentURL.searchParams.set("clientType", filter.clientType);
-                window.location.assign(loc.replace("-", "_") + ".html" + currentURL.search);
-            });
+            if (currentURL.pathname == `/pages/${loc.replace("-", "_")}.html`)
+                $("#nav-" + loc).addClass("active")
+            
+            else {
+                $("#nav-" + loc).on("click", function() {
+                    if (filter.timeStart !== undefined)
+                        currentURL.searchParams.set("timeStart", filter.timeStart.getTime());
+                    if (filter.timeEnd !== undefined)
+                        currentURL.searchParams.set("timeEnd", filter.timeEnd.getTime());
+                    if (filter.selectedCity !== undefined)
+                        currentURL.searchParams.set("selectedCity", filter.selectedCity);
+                    else
+                        currentURL.searchParams.delete("selectedCity");
+                    if (filter.selectedStation !== undefined)
+                        currentURL.searchParams.set("selectedStation", filter.selectedStation);
+                    else
+                        currentURL.searchParams.delete("selectedStation");
+                    currentURL.searchParams.set("cityTraversal", filter.cityTraversal);
+                    currentURL.searchParams.set("clientType", filter.clientType);
+                    window.location.assign(loc.replace("-", "_") + ".html" + currentURL.search);
+                });
+            }
         }
     })
 });
@@ -88,7 +93,6 @@ $.get("bases/filters.html", function(data) {
 
 const changeSlider3ToggleState = function(filterId, state) {
     let left_position = 5 + 35 * state;
-    // TODO: animation
     d3.select(filterId).select(".slider-3-toggle-circle")
         .transition()
         .duration(1000)
@@ -146,19 +150,28 @@ function addTimeSlider(initialLeft, initialRight, domain) {
     timeSlider.selectAll('text')
         .data([[0, 15], [timeSliderWidth + timeSliderLabelWidth, 15]])
         .join('text')
-            .text('A')
-            .attr('x', (d) => d[0])
+            .text('?')
+            .attr('x', (d) => d[0] + 4) // add some padding
             .attr('y', (d) => d[1])
-
+            .attr('text-align', (d, i) => i == 0 ? 'end' : 'start')
+            
     var brush = d3.brushX()
         .extent([[0, 0], [timeSliderWidth, timeSliderHeight]])
         .on('brush', brushed)
         .on('end', brushEnded)
-
+            
+    
     var brushGroup = timeFilterSvg.append('g')
         .attr('class', 'brush')
         .attr('transform', 'translate(' + timeSliderLabelWidth + ',' + 0 + ')')
         .call(brush)
+    
+    brushGroup.select('.overlay')
+        .attr('stroke', 'black')
+        .attr('stroke-width', 1)
+    
+    brushGroup.selectAll('.handle')
+        .attr('fill', 'gray')
     
     function brushed(event) {
         // Alternative: let selection = event.selection
@@ -171,7 +184,8 @@ function addTimeSlider(initialLeft, initialRight, domain) {
         timeSlider.selectAll("text")
             .text(function(d, i) {
                 let date = new Date(range[i]);
-                return `${date.getUTCDate()}/${date.getUTCMonth() + 1}/${date.getUTCFullYear()}`
+                let formatDaysMonths = (date) => (((date < 10) ? "0" : "") + date)  // add a leading zero to keep the same spacing
+                return `${formatDaysMonths(date.getUTCDate())}/${formatDaysMonths(date.getUTCMonth() + 1)}/${date.getUTCFullYear()}`
             })
         
         // NOTE: comment if update every brush action is too heavy, and use brushEnded instead
@@ -179,11 +193,11 @@ function addTimeSlider(initialLeft, initialRight, domain) {
     }
 
     function brushEnded() {
-        let selection = d3.brushSelection(this)
+        let selection = d3.brushSelection(this);
         if (selection == null)
-            return
+            return;
 
-        let range = selection.map(x.invert)
+        let range = selection.map(x.invert);
 
         if (filter.timeStart.getTime() == range[0] && filter.timeEnd.getTime() == range[1])
             return;
@@ -196,6 +210,59 @@ function addTimeSlider(initialLeft, initialRight, domain) {
     }
 
     brush.move(brushGroup, [initialLeft, initialRight].map(x));
+
+    let advanceMonthPlayInterval = undefined;
+
+    function advanceMonth() {
+        let selection = d3.brushSelection(brushGroup.node());
+        if (selection == null)
+            return;
+
+        let range = selection.map(x.invert);
+
+        const month = 30 * 24 * 60 * 60 * 1000;
+
+        if (range[1] == x.domain()[1]) {
+            d3.select("#filter-time-play")
+                .property("value", "stopped")
+                .classed("active", false);
+            
+            clearInterval(advanceMonthPlayInterval);
+            advanceMonthPlayInterval = undefined;
+    
+            return;
+        }
+
+        if (range[1] + month > x.domain()[1]) {
+            range[0] = x.domain()[1] - range[1] + range[0];
+            range[1] = x.domain()[1];
+        }
+        else {
+            range[0] += month;
+            range[1] += month;
+        }
+
+        brush.move(brushGroup, range.map(x));
+    }
+
+    d3.select("#filter-time-play").on("click", function() {
+        const current_state = d3.select(this).property("value");
+        if (current_state == "playing") {
+            d3.select(this)
+                .property("value", "stopped")
+                .classed("active", false);
+
+            clearInterval(advanceMonthPlayInterval);
+        }
+        else if (current_state == "stopped") {
+            d3.select(this)
+                .property("value", "playing")
+                .classed("active", true);
+    
+            // After 2 seconds, advance 1 trimester
+            advanceMonthPlayInterval = setInterval(advanceMonth, 1500);
+        }
+    })
 
     return brush
 }

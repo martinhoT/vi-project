@@ -12,7 +12,7 @@
 
     <div id="content">
         <div id="content-title">
-            <h1>Details of <span id="content-title-selected"></span></h1>
+            <h1>Details of <span id="content-title-selected">...</span></h1>
             <button id="map-selector-opener" class="btn btn-light ms-3" data-bs-toggle="button">
                 📍
             </button>
@@ -51,7 +51,8 @@
             </div>
     
             <div id="content-availability">
-    
+                <h2>Bike availability</h2>
+
                 <div id="content-availability-vis"></div>
             </div>
         </div>
@@ -69,7 +70,6 @@
         // TODO: ascending checkbox not on by default
         // TODO: if all values are 0 then the bars will be drawn anyway, but they should be hidden
         // TODO: maybe the X-axis highlight of the selected city/station could be better (only bold...?)
-        // TODO: availability chart missing legend
 
         let data_update_callbacks = [];
         d3.select("#content").on("data-update", () => {
@@ -252,15 +252,6 @@
                 .attr("stroke", "red")
                 .attr("stroke-width", 1.5)
                 .attr("stroke-dasharray", "4");
-
-            // Add title
-            svg.append("text")
-                .attr("x", width / 2)
-                .attr("y", 0 - (margin.top / 2))
-                .attr("text-anchor", "middle")
-                .style("font-size", "20px")
-                .style("text-decoration", "underline")
-                .text("Bike availability");
 
             // Add X axis label
             svg.append("text")
