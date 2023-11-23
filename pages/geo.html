@@ -398,15 +398,15 @@
 
         console.log("Loading data...");
 
-        metadata_data = d3.json("../data/metadata.json");
-        trip_small_data = d3.csv("../data/trip_small.csv");
-        status_small_data = d3.csv("../data/status_small.csv");
+        const metadata_data = d3.json("../data/metadata.json");
+        const trip_small_data = d3.csv("../data/trip_small.csv");
+        const status_small_data = d3.csv("../data/status_small.csv");
 
-        bay_area_geodata = d3.json("../data/Bay Area Counties.geojson")
-        mountain_view_geodata = d3.json("../data/mountain_view.geojson");
-        palo_alto_geodata = d3.json("../data/palo_alto.geojson");
-        redwood_city_geodata = d3.json("../data/redwood_city.geojson");
-        san_jose_geodata = d3.json("../data/san_jose.geojson");
+        const bay_area_geodata = d3.json("../data/Bay Area Counties.geojson")
+        const mountain_view_geodata = d3.json("../data/mountain_view.geojson");
+        const palo_alto_geodata = d3.json("../data/palo_alto.geojson");
+        const redwood_city_geodata = d3.json("../data/redwood_city.geojson");
+        const san_jose_geodata = d3.json("../data/san_jose.geojson");
 
         Promise.all([bay_area_geodata, mountain_view_geodata, palo_alto_geodata, redwood_city_geodata, san_jose_geodata])
             .then((geos) => {

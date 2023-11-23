@@ -13,7 +13,7 @@
     <div id="content">
         <div id="content-title">
             <h1>Details of <span id="content-title-selected"></span></h1>
-            <button id="map-selector-opener" class="btn btn-light" data-bs-toggle="button">
+            <button id="map-selector-opener" class="btn btn-light ms-3" data-bs-toggle="button">
                 📍
             </button>
 
@@ -60,7 +60,7 @@
     <div id="filters"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
-    <script src="http://d3js.org/d3.v6.js"></script>
+    <script src="http://d3js.org/d3.v7.js"></script>
     <script src="base.js"></script>
     <script src="charts/trip_bar.js"></script>
     <script src="charts/geo_map.js"></script>
@@ -69,6 +69,7 @@
         // TODO: ascending checkbox not on by default
         // TODO: if all values are 0 then the bars will be drawn anyway, but they should be hidden
         // TODO: maybe the X-axis highlight of the selected city/station could be better (only bold...?)
+        // TODO: availability chart missing legend
 
         let data_update_callbacks = [];
         d3.select("#content").on("data-update", () => {
@@ -192,6 +193,132 @@
             d3.select("#map-selector").style("display", "none");
 
             return components.projection;
+        }
+
+        function visAvailability(metadata) {
+            // Create the line chart
+            const margin = { top: 50, right: 20, bottom: 50, left: 50 }; // Increased top and bottom margins
+            const width = 900 - margin.left - margin.right;
+            const height = 400 - margin.top - margin.bottom;
+            
+            const svg = d3.select("#content-availability-vis")
+                .append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+            const xScale = d3.scaleTime()
+                .range([0, width]);
+
+            const yScale = d3.scaleLinear()
+                .range([height, 0]);
+
+            const line = d3.line()
+                .x(d => xScale(d.date))
+                .y(d => yScale(d.bikes_available_avg));
+
+            // Add X and Y axes
+            const xAxis = svg.append("g")
+                .attr("transform", "translate(0," + height + ")");
+            
+            xAxis
+                .append("text")
+                .attr("x", width / 2)
+                .attr("y", 30)
+                .attr("dy", "1em")
+                .style("text-anchor", "middle")
+                .text("Date");
+                // .call(d3.axisBottom(xScale))
+
+            const yAxis = svg.append("g");
+            
+            yAxis
+                .append("text")
+                .attr("transform", "rotate(-90)")
+                .attr("y", -margin.left)
+                .attr("x", -height / 2)
+                .attr("dy", "-2em")
+                .style("text-anchor", "middle")
+                .text("Bikes Available");
+                // .call(d3.axisLeft(yScale))
+
+            const lineChart = svg.append("path")
+                .attr("fill", "none")
+                .attr("stroke", "steelblue")
+                .attr("stroke-width", 1.5);
+
+            const lineChartMax = svg.append("line")
+                .attr("stroke", "red")
+                .attr("stroke-width", 1.5)
+                .attr("stroke-dasharray", "4");
+
+            // Add title
+            svg.append("text")
+                .attr("x", width / 2)
+                .attr("y", 0 - (margin.top / 2))
+                .attr("text-anchor", "middle")
+                .style("font-size", "20px")
+                .style("text-decoration", "underline")
+                .text("Bike availability");
+
+            // Add X axis label
+            svg.append("text")
+                .attr("transform", "translate(" + (width / 2) + " ," + (height + 30) + ")")
+                .style("text-anchor", "middle")
+                .text("Time");
+
+            // Add Y axis label
+            svg.append("text")
+                .attr("transform", "rotate(-90)")
+                .attr("y", 0 - margin.left)
+                .attr("x", 0 - (height / 2))
+                .attr("dy", "1em")
+                .style("text-anchor", "middle")
+                .text("Bikes available");
+
+            return (data) => {
+                // If we selected a city, then we need to average the availability on all of the city's stations
+                if (filter.selectedCity !== undefined)
+                    data = Array.from(d3.rollup(data, g => d3.mean(g.map((v) => v.bikes_available_avg)), d => d.date).entries())
+                        .map((d) => { return { date: d[0], bikes_available_avg: d[1] }; });
+                
+                // Determine the capacity line. If a city was selected, then we just outline the maximum availability found in the data
+                let maxBikes = undefined;
+                if (filter.selectedCity !== undefined)
+                    maxBikes = d3.max(data, d => d.bikes_available_avg);
+                else if (filter.selectedStation !== undefined)
+                    maxBikes = metadata.stations[filter.selectedStation].dock_count;
+
+                // Update the scales
+                xScale.domain(d3.extent(data, d => d.date));
+                yScale.domain([0, maxBikes]);
+
+                // Update the axes
+                xAxis
+                    .transition()
+                    .duration(1000)
+                    .call(d3.axisBottom(xScale));
+
+                yAxis
+                    .transition()
+                    .duration(1000)
+                    .call(d3.axisLeft(yScale));
+
+                // Update the line chart
+                lineChart
+                    .datum(data)
+                    .transition()
+                    .duration(1000)
+                    .attr("d", line);
+                    
+                // Update the maximum line
+                lineChartMax
+                    .attr("x1", 0)
+                    .attr("y1", yScale(maxBikes))
+                    .attr("x2", width)
+                    .attr("y2", yScale(maxBikes));   
+            }
         }
 
         function visTrafficSpecific(metadata) {
@@ -335,6 +462,41 @@
             };
         }
 
+        function drawStatusData(metadata, data, update_callbacks) {
+            console.log("Loaded status data");
+
+            const dateParser = d3.utcParse("%Y-%-m-%-d");
+
+            // Convert the appropriate numeric data
+            for (const d of data) {
+                d["date"] = dateParser(d["date"]);
+                d["bikes_available_avg"] = +d["bikes_available_avg"];
+                d["docks_available_avg"] = +d["docks_available_avg"];
+            }
+
+            data = d3.sort(data, (a, b) => d3.ascending(a.date, b.date));
+
+            function updateData() {
+                console.log("Filtering status data...");
+
+                let dataFiltered = data.filter((d) => {
+                    return d.date >= filter.timeStart 
+                        && d.date <= filter.timeEnd
+                        && (filter.selectedStation === undefined || d.station_id == filter.selectedStation)
+                        && (filter.selectedCity === undefined || metadata.stations[d.station_id].city == filter.selectedCity);
+                });
+
+                console.log("Status data filtered");
+                
+                update_callbacks.forEach((callback) => callback(dataFiltered));
+            }
+
+            console.log("Initializing visualizations (status data)");
+            // TODO: no need to update for all filters but time
+            data_update_callbacks.push(updateData);
+            updateData();
+        }
+
         function drawTripData(metadata, data, update_callbacks) {
             console.log("Loaded trip data");
 
@@ -381,14 +543,15 @@
 
         console.log("Loading data...");
 
-        trip_small_data = d3.csv("../data/trip_small.csv");
-        metadata_data = d3.json("../data/metadata.json");
+        const trip_small_data = d3.csv("../data/trip_small.csv");
+        const status_small_data = d3.csv("../data/status_small.csv");
+        const metadata_data = d3.json("../data/metadata.json");
         
-        bay_area_geodata = d3.json("../data/Bay Area Counties.geojson")
-        mountain_view_geodata = d3.json("../data/mountain_view.geojson");
-        palo_alto_geodata = d3.json("../data/palo_alto.geojson");
-        redwood_city_geodata = d3.json("../data/redwood_city.geojson");
-        san_jose_geodata = d3.json("../data/san_jose.geojson");
+        const bay_area_geodata = d3.json("../data/Bay Area Counties.geojson")
+        const mountain_view_geodata = d3.json("../data/mountain_view.geojson");
+        const palo_alto_geodata = d3.json("../data/palo_alto.geojson");
+        const redwood_city_geodata = d3.json("../data/redwood_city.geojson");
+        const san_jose_geodata = d3.json("../data/san_jose.geojson");
 
         metadata_data
             .then((metadata) => {
@@ -399,9 +562,14 @@
                 );
 
                 const trip_data_draw_callbacks = [visTrafficSpecific(metadata)];
+                const status_data_draw_callbacks = [visAvailability(metadata)];
 
                 trip_small_data
                     .then((data) => drawTripData(metadata, data, trip_data_draw_callbacks))
+                    .catch(function(err){console.log(err)});
+                
+                status_small_data
+                    .then((data) => drawStatusData(metadata, data, status_data_draw_callbacks))
                     .catch(function(err){console.log(err)});
             })
             .catch(function(err){console.log(err)});

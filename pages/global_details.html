@@ -289,7 +289,7 @@
 
         console.log("Loading data...");
 
-        trip_small_data = d3.csv("../data/trip_small.csv");
+        const trip_small_data = d3.csv("../data/trip_small.csv");
 
         // TODO: possible performance optimization: (pre-)sort trip data by date. With this, we don't need to filter, we can just use indexOf() and get the indices of the initial and end dates, and finally take the interval in between those indices (hint: use d3.bisector!)
         d3.json("../data/metadata.json")
