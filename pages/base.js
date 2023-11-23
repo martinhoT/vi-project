@@ -78,9 +78,9 @@ $.get("bases/filters.html", function(data) {
 
         for (let filter of ["#filter-city-traversal", "#filter-client-type"]) {
             for (let i = 0; i < 3; i++) {
-                $(filter).children(".slider-3-toggle").children(".slider-3-toggle-clickable-areas").children(".slider-3-toggle-clickable-area-" + i).on("click", function() {
+                d3.select(filter).select(".slider-3-toggle-clickable-area-" + i).on("click", function() {
                     changeSlider3ToggleState(filter, i);
-                })
+                });
             }
         }
     });
@@ -89,26 +89,29 @@ $.get("bases/filters.html", function(data) {
 const changeSlider3ToggleState = function(filterId, state) {
     let left_position = 5 + 35 * state;
     // TODO: animation
-    $(filterId).children(".slider-3-toggle").children(".slider-3-toggle-circle").css("left", left_position + "px");
+    d3.select(filterId).select(".slider-3-toggle-circle")
+        .transition()
+        .duration(1000)
+        .ease(d3.easeExp)
+        .style("left", left_position + "px");
 
     // Change the labels' color
-    if (state <= 1) {
-        $(filterId).children(".filter-label-left").css("color", "#0CA789");
-    }
-    else {
-        $(filterId).children(".filter-label-left").css("color", "#000000");
-    }
+    const labels = [".filter-label-left", ".filter-label-right"];
+    const colors = [
+        state <= 1 ? "#0CA789" : "#000000",
+        state >= 1 ? "#0CA789" : "#000000",
+    ];
 
-    if (state >= 1) {
-        $(filterId).children(".filter-label-right").css("color", "#0CA789");
-    }
-    else {
-        $(filterId).children(".filter-label-right").css("color", "#000000");
-    }
+    for (const i in labels)
+        d3.select(filterId).select(labels[i])
+            .transition()
+            .duration(1000)
+            .ease(d3.easeExp)
+            .style("color", colors[i])
     
-    let filterElem = document.getElementById(filterId.slice(1));
-    let changed = filterElem.value != state;
-    filterElem.value = state;
+    let filterElem = d3.select(filterId);
+    let changed = filterElem.property("value") != state;
+    filterElem.property("value", state);
     if (changed) {
         if (filterId == "#filter-city-traversal") {
             filter.cityTraversal = state;
@@ -255,6 +258,6 @@ function setupFilters(metadata,
     changeSlider3ToggleState("#filter-city-traversal", filter.cityTraversal)
     changeSlider3ToggleState("#filter-client-type", filter.clientType)
 
-    let timeSliderBrush = addTimeSlider(filter.timeStart, filter.timeEnd, dateExtent);
+    addTimeSlider(filter.timeStart, filter.timeEnd, dateExtent);
     console.log("Filters prepared");
 }
