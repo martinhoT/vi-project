@@ -277,6 +277,67 @@
                 .style("text-anchor", "middle")
                 .text("Bikes available");
 
+            // Add legend
+            const legendWidth = 220;
+            const legendHeight = 50;
+
+            const drag = d3.drag()
+                .on("start", function(event) {
+                    d3.select(this).style("cursor", "grabbing");
+                })
+                .on("drag", function(event) {
+                    const x = Math.min(width - legendWidth, Math.max(0, event.x - legendWidth / 2));
+                    const y = Math.min(height - legendHeight, Math.max(0, event.y - legendHeight / 2));
+                    d3.select(this).attr("transform", "translate(" + (x) + "," + (y) + ")");
+                })
+                .on("end", function(event) {
+                    d3.select(this).style("cursor", "grab");
+                });
+
+            const legendSvg = svg.append("g")
+                .attr("transform", "translate(" + (width - legendWidth) + "," + (height - legendHeight) + ")")
+                .style("cursor", "grab")
+                .call(drag);
+
+            // Legend background
+            legendSvg.append("rect")
+                .attr("width", legendWidth)
+                .attr("height", legendHeight)
+                .attr("fill", "white");
+
+            const legendAvailability = legendSvg.append("g")
+                .attr("transform", "translate(0, 20)");
+                
+            legendAvailability.append("line")
+                .attr("x1", 0)
+                .attr("y1", 0)
+                .attr("x2", 15)
+                .attr("y2", 0)
+                .attr("stroke", "steelblue")
+                .attr("stroke-width", 1.5);
+            
+            legendAvailability.append("text")
+                .attr("x", 20)
+                .attr("y", 5)
+                .text("Average bikes available");
+            
+            const legendMax = legendSvg.append("g")
+                .attr("transform", "translate(0, 40)");
+            
+            legendMax.append("line")
+                .attr("x1", 0)
+                .attr("y1", 0)
+                .attr("x2", 15)
+                .attr("y2", 0)
+                .attr("stroke", "red")
+                .attr("stroke-width", 1.5)
+                .attr("stroke-dasharray", "4");
+            
+            legendMax.append("text")
+                .attr("x", 20)
+                .attr("y", 5)
+                .text("Capacity");
+
             return (data) => {
                 // If we selected a city, then we need to average the availability on all of the city's stations
                 if (filter.selectedCity !== undefined)
