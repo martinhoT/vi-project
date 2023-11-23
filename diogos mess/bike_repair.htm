@@ -6,21 +6,41 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bikes Usage Histogram</title>
     <script src="https://d3js.org/d3.v6.min.js"></script>
+    <style>
+        /* Add some styling for the table container */
+        #table-container {
+            max-height: 400px; /* Set the maximum height */
+            overflow-y: auto; /* Enable vertical scrolling */
+            margin-left: 20px; /* Adjust margin to separate from the histogram */
+        }
+
+        /* Add styling for the graph container */
+        #my_dataviz {
+            flex: 1; /* Let it take up the available space */
+        }
+    </style>
 </head>
 
 <body>
-    <!-- Create a div where the graph will take place -->
-    <div id="my_dataviz"></div>
+    <!-- Create a div to hold both the graph and the table -->
+    <div style="display: flex;">
+        <!-- Graph container -->
+        <div id="my_dataviz"></div>
+
+        <!-- Table container on the right -->
+        <div id="table-container"></div>
+    </div>
 
     <p>
         <label># bins</label>
-        <input type="number" min="1" max="100" step="1" value="20" id="nBin">
+        <!-- Change input type to "number" and use a dynamically generated dropdown -->
+        <select id="nBin"></select>
     </p>
 
     <script>
         // set the dimensions and margins of the graph
         const margin = { top: 10, right: 30, bottom: 30, left: 80 },
-            width = 460 - margin.left - margin.right,
+            width = 900 - margin.left - margin.right,
             height = 400 - margin.top - margin.bottom;
 
         // append the svg object to the body of the page
@@ -31,6 +51,19 @@
             .append("g")
             .attr("transform", `translate(${margin.left},${margin.top})`);
 
+        // Generate options for the dropdown dynamically
+        const dropdown = d3.select("#nBin");
+
+        for (let i = 1; i <= 100; i++) {
+            dropdown.append("option")
+                .attr("value", i)
+                .text(i);
+        }
+
+        // Set the default selected value
+        dropdown.property("value", 7);
+
+        // Load CSV data
         d3.csv("bikes_usage.csv").then(function (data) {
             // Aggregate total duration for each bike
             const aggregatedData = d3.rollup(data, v => d3.sum(v, d => +d.total_duration), d => +d.bike_id);
@@ -40,58 +73,111 @@
                 total_duration: totalDuration
             }));
 
-            // Sort the data by bike ID
-            processedData.sort((a, b) => a.bike - b.bike);
+            // Sort the data by total_duration
+            processedData.sort((a, b) => a.total_duration - b.total_duration);
 
-            // Get the number of bins from the input field
-            const numBins = 18
+            // Create initial histogram with default number of bins
+            updateHistogram(7);
 
-            // Create a histogram function
-            const histogram = d3.histogram()
-                .value(d => d.bike)
-                .domain([d3.min(processedData, d => d.bike), d3.max(processedData, d => d.bike)])
-                .thresholds(numBins);
+            // Event listener for the dropdown
+            dropdown.on("change", function () {
+                const numBins = +this.value;
+                updateHistogram(numBins);
+            });
 
-            // Bin the data
-            const bins = histogram(processedData);
+            function updateHistogram(numBins) {
+                // Create a histogram function
+                const histogram = d3.histogram()
+                    .value(d => d.total_duration)
+                    .domain([d3.min(processedData, d => d.total_duration), d3.max(processedData, d => d.total_duration)])
+                    .thresholds(d3.range(d3.min(processedData, d => d.total_duration), d3.max(processedData, d => d.total_duration), (d3.max(processedData, d => d.total_duration) - d3.min(processedData, d => d.total_duration)) / numBins));
 
-            // Create the scales
-            const xScale = d3.scaleLinear()
-                .domain([d3.min(processedData, d => d.bike), d3.max(processedData, d => d.bike)])
-                .range([0, width]);
+                // Bin the data
+                const bins = histogram(processedData);
 
-            const maxTotalDuration = d3.max(bins, bin => d3.sum(bin, d => d.total_duration));
+                // Create the scales
+                const xScale = d3.scaleLinear()
+                    .domain([d3.min(processedData, d => d.total_duration), d3.max(processedData, d => d.total_duration)])
+                    .range([0, width]);
 
-            const yScale = d3.scaleLinear()
-                .domain([0, maxTotalDuration])
-                .range([height, 0]);
+                const maxCount = d3.max(bins, bin => bin.length);
 
-            // Create the bars
-            svg.selectAll("rect")
-                .data(bins)
-                .enter()
-                .append("rect")
-                .attr("x", d => xScale(d.x0))
-                .attr("y", d => yScale(d3.sum(d, v => v.total_duration)))  // Use d3.sum to get the total_duration for each bin
-                .attr("width", d => xScale(d.x1) - xScale(d.x0))
-                .attr("height", d => height - yScale(d3.sum(d, v => v.total_duration)))  // Adjust the height based on total_duration
-                .style("fill", "#69b3a2");
+                const yScale = d3.scaleLinear()
+                    .domain([0, maxCount])
+                    .range([height, 0]);
 
+                // Remove existing bars
+                svg.selectAll("rect").remove();
 
+                // Create the bars
+                const bars = svg.selectAll("rect")
+                    .data(bins)
+                    .enter()
+                    .append("rect")
+                    .attr("x", d => xScale(d.x0))
+                    .attr("y", d => yScale(d.length)) // Use d.length to get the count of bikes in each bin
+                    .attr("width", d => xScale(d.x1) - xScale(d.x0))
+                    .attr("height", d => height - yScale(d.length)) // Adjust the height based on the count
+                    .style("fill", "#69b3a2");
 
+                // Add event listener to the bars
+                bars.on("click", function (event, d) {
+                    // Display information in a table
+                    displayTable(d);
+                });
 
-            // Add x-axis
-            svg.append("g")
-                .attr("transform", `translate(0, ${height})`)
-                .call(d3.axisBottom(xScale));
+                // Add x-axis
+                svg.append("g")
+                    .attr("transform", `translate(0, ${height})`)
+                    .call(d3.axisBottom(xScale));
 
-            // Add y-axis
-            svg.append("g")
-                .call(d3.axisLeft(yScale));
+                // Remove existing y-axis
+                svg.select(".y-axis").remove();
 
+                // Add y-axis
+                svg.append("g")
+                    .attr("class", "y-axis")
+                    .call(d3.axisLeft(yScale));
+            }
+
+            // Function to display information in a table
+            function displayTable(data) {
+                const tableContainer = d3.select("#table-container");
+                tableContainer.html(""); // Clear previous content
+
+                const table = tableContainer.append("table").classed("table", true);
+                const thead = table.append("thead");
+                const tbody = table.append("tbody");
+
+                // Append header row
+                thead.append("tr")
+                    .selectAll("th")
+                    .data(["Bike ID", "Total Duration"])
+                    .enter()
+                    .append("th")
+                    .text(d => d);
+
+                // Append data rows
+                const rows = tbody.selectAll("tr")
+                    .data(data)
+                    .enter()
+                    .append("tr");
+
+                // Populate data in the table
+                const cells = rows.selectAll("td")
+                    .data(d => [d.bike, d.total_duration])
+                    .enter()
+                    .append("td")
+                    .text(d => d);
+
+                // Add some basic styling
+                table.attr("border", "1");
+                table.style("border-collapse", "collapse");
+                table.selectAll("th, td").style("padding", "8px");
+                table.selectAll("th").style("background-color", "#f2f2f2");
+            }
         });
     </script>
-
 </body>
 
 </html>
