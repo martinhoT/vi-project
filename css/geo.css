@@ -29,3 +29,13 @@
     stroke: black;
     stroke-width: 3px;
 }
+
+.geo-tooltip {
+    position: absolute;
+    z-index: 90;
+    background-color: white;
+    border: solid;
+    border-width: 2px;
+    border-radius: 5px;
+    padding: 5px;
+}

@@ -11,6 +11,8 @@
     <div id="nav"></div>
 
     <div id="content">
+        <div id="geo-tooltip" class="geo-tooltip" style="opacity: 0"></div>
+
         <div id="details-box">
             <h4 id="selected-city-station-box-label">Nothing selected</h4>
             <h3 id="selected-city-station-box-name"></h3>
@@ -42,6 +44,8 @@
         // HTML element variables
         const selected_city_station_box_label = d3.select("#selected-city-station-box-label")
         const selected_city_station_box_name = d3.select("#selected-city-station-box-name");
+
+        
 
         function setupMap(bay_area_geo, city_geos) {
             console.log("Loaded map data");
@@ -106,6 +110,23 @@
             d3.selectAll("path.geo-map-city")
                 .on("click", function(event) {
                     selectCityMap(this);
+                })
+                .on("mouseover", function(event) {
+                    d3.select("#geo-tooltip")
+                        .style("opacity", 1);
+                })
+                .on("mousemove", function(event) {
+                    const city = this.__data__.city;
+                    const tooltip_text = `<b>${city}</b> <br> City`;
+                    
+                    d3.select("#geo-tooltip")
+                        .html(tooltip_text)
+                        .style("left", (event.clientX + 10) + "px")
+                        .style("top", (event.clientY - 28) + "px");
+                })
+                .on("mouseleave", function(event) {
+                    d3.select("#geo-tooltip")
+                        .style("opacity", 0);
                 })
                 .each(function(d) {
                     if (d.city === filter.selectedCity)
@@ -237,7 +258,6 @@
                     .map((d) => {
                         const [x, y] = projection([metadata.stations[d[0]].long, metadata.stations[d[0]].lat]);
                         // Include the station ID as the first element of the array, so that we know to which station the pie chart belongs when we click it
-                        // TODO: better structure please oh god
                         return {
                             station: d[0],
                             x: x,
@@ -268,6 +288,24 @@
                     .on("click", function(event) {
                         selectStationMap(this);
                     })
+                    .on("mouseover", function(event) {
+                        d3.select("#geo-tooltip")
+                            .style("opacity", 1);
+                    })
+                    .on("mousemove", function(event) {
+                        const station_id = this.__data__.station;
+                        const station_name = metadata.stations[station_id].name;
+                        const tooltip_text = `<b>${station_name}</b> <br> Station`;
+                        
+                        d3.select("#geo-tooltip")
+                            .html(tooltip_text)
+                            .style("left", (event.clientX + 10) + "px")
+                            .style("top", (event.clientY - 28) + "px");
+                    })
+                    .on("mouseleave", function(event) {
+                        d3.select("#geo-tooltip")
+                            .style("opacity", 0);
+                    });
                     
                 // NOTE: this is run everytime even though it only exists for when the filter is already initialized in the URL
                 let selected_station_pie = d3.selectAll("g.station-pie")
