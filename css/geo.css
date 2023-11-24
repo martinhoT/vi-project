@@ -17,6 +17,8 @@
 
 .station-pie {
     cursor: pointer;
+    stroke: salmon;
+    stroke-width: 1px;
 }
 
 .station-pie:hover {

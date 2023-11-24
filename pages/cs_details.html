@@ -159,6 +159,7 @@
                 })
                 .on("mouseover", function(event) {
                     d3.select("#geo-tooltip")
+                        .transition()
                         .style("opacity", 1);
                 })
                 .on("mousemove", function(event) {
@@ -172,6 +173,7 @@
                 })
                 .on("mouseleave", function(event) {
                     d3.select("#geo-tooltip")
+                        .transition()
                         .style("opacity", 0);
                 })
                 .each(function(d) {
@@ -204,6 +206,7 @@
                 })
                 .on("mouseover", function(event) {
                     d3.select("#geo-tooltip")
+                        .transition()
                         .style("opacity", 1);
                 })
                 .on("mousemove", function(event) {
@@ -218,6 +221,7 @@
                 })
                 .on("mouseleave", function(event) {
                     d3.select("#geo-tooltip")
+                        .transition()
                         .style("opacity", 0);
                 })
                 .each(function(d) {

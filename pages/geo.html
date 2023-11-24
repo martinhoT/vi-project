@@ -113,6 +113,7 @@
                 })
                 .on("mouseover", function(event) {
                     d3.select("#geo-tooltip")
+                        .transition()
                         .style("opacity", 1);
                 })
                 .on("mousemove", function(event) {
@@ -126,7 +127,14 @@
                 })
                 .on("mouseleave", function(event) {
                     d3.select("#geo-tooltip")
-                        .style("opacity", 0);
+                        .transition()
+                        .style("opacity", 0)
+                        .end()
+                        .then(() => {
+                            d3.select("#geo-tooltip")
+                                .style("left", "0px")
+                                .style("top", "0px");
+                        })
                 })
                 .each(function(d) {
                     if (d.city === filter.selectedCity)
@@ -290,6 +298,7 @@
                     })
                     .on("mouseover", function(event) {
                         d3.select("#geo-tooltip")
+                            .transition()
                             .style("opacity", 1);
                     })
                     .on("mousemove", function(event) {
@@ -304,6 +313,9 @@
                     })
                     .on("mouseleave", function(event) {
                         d3.select("#geo-tooltip")
+                            .style("left", "0px")
+                            .style("top", "0px")
+                            .transition()
                             .style("opacity", 0);
                     });
                     
