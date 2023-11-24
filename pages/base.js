@@ -29,11 +29,15 @@ $.get("bases/nav.html", function(data) {
     
     $("#nav").ready(function() {
         for (const loc of ["intro", "geo", "cs-details", "global-details", "insights", "about"]) {
+            let element = $("#nav-" + loc);
+            if (element === null)
+                continue;
+
             if (currentURL.pathname == `/pages/${loc.replace("-", "_")}.html`)
-                $("#nav-" + loc).addClass("active")
+                element.addClass("active");
             
             else {
-                $("#nav-" + loc).on("click", function() {
+                element.on("click", function() {
                     if (filter.timeStart !== undefined)
                         currentURL.searchParams.set("timeStart", filter.timeStart.getTime());
                     if (filter.timeEnd !== undefined)
