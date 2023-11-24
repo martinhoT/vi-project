@@ -7,41 +7,66 @@
 </head>
 <body>
     
-    <div id="filters">
-        <!-- TODO: add an information tooltip for explanation -->
-        <div id="filter-city-traversal" class="filter-group">
-            <div class="filter-label-left">Within <br> cities</div>
-            <div class="slider-3-toggle">
-                <div class="slider-3-toggle-middle-indicator"></div>
+    <div id="filters" class="filters">
+        <div class="filters-header">
+            <span class="filters-header-title">
+                ▼ Filters
+            </span>
+        </div>
+        <div class="filters-box">
+            <div id="filter-city-traversal" class="filter-group">
+                <div class="filter-label-left">Within <br> cities</div>
+                <div class="slider-3-toggle">
+                    <div class="slider-3-toggle-middle-indicator"></div>
+        
+                    <div class="slider-3-toggle-circle"></div>
+        
+                    <div class="slider-3-toggle-clickable-areas">
+                        <div class="slider-3-toggle-clickable-area-0"></div>
+                        <div class="slider-3-toggle-clickable-area-1"></div>
+                        <div class="slider-3-toggle-clickable-area-2"></div>
+                    </div>
+                </div>
+                <div class="filter-label-right">Between <br> cities</div>
+                
+                <span style="cursor: help" data-toggle="tooltip" data-placement="top" title="Only consider trips within/between cities, or any kind of trip">
+                    ⓘ
+                </span>
+            </div>
     
-                <div class="slider-3-toggle-circle"></div>
+            <div id="filter-client-type" class="filter-group">
+                <div class="filter-label-left">Customer</div>
+                <div class="slider-3-toggle">
+                    <div class="slider-3-toggle-middle-indicator"></div>
+        
+                    <div class="slider-3-toggle-circle"></div>
+        
+                    <div class="slider-3-toggle-clickable-areas">
+                        <div class="slider-3-toggle-clickable-area-0"></div>
+                        <div class="slider-3-toggle-clickable-area-1"></div>
+                        <div class="slider-3-toggle-clickable-area-2"></div>
+                    </div>
+                </div>
+                <div class="filter-label-right">Subscriber</div>
+
+                <span style="cursor: help" data-bs-toggle="tooltip" data-bs-placement="top" title="Only consider trips made by customers/subscribers, or any kind of client">
+                    ⓘ
+                </span>
+            </div>
     
-                <div class="slider-3-toggle-clickable-areas">
-                    <div class="slider-3-toggle-clickable-area-0"></div>
-                    <div class="slider-3-toggle-clickable-area-1"></div>
-                    <div class="slider-3-toggle-clickable-area-2"></div>
+            <div>
+                Time interval:
+                <span style="cursor: help" data-bs-toggle="tooltip" data-bs-placement="top" title="Only consider data within the provided time interval. For trips, only trips that start and end within the provided time interval are considered">
+                    ⓘ
+                </span>
+                <div>
+                    <div id="filter-time" style="display: inline">
+                    </div>
+                    <button id="filter-time-play" class="btn btn-sm btn-dark" value="stopped" data-bs-toggle="tooltip" data-bs-placement="top" title="Advance by trimesters">
+                        ▶
+                    </button>
                 </div>
             </div>
-            <div class="filter-label-right">Between <br> cities</div>
-        </div>
-
-        <div id="filter-client-type" class="filter-group">
-            <div class="filter-label-left">Customer</div>
-            <div class="slider-3-toggle">
-                <div class="slider-3-toggle-middle-indicator"></div>
-    
-                <div class="slider-3-toggle-circle"></div>
-    
-                <div class="slider-3-toggle-clickable-areas">
-                    <div class="slider-3-toggle-clickable-area-0"></div>
-                    <div class="slider-3-toggle-clickable-area-1"></div>
-                    <div class="slider-3-toggle-clickable-area-2"></div>
-                </div>
-            </div>
-            <div class="filter-label-right">Subscriber</div>
-        </div>
-
-        <div id="filter-time">
         </div>
     </div>
 

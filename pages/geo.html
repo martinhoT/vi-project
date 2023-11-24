@@ -11,6 +11,8 @@
     <div id="nav"></div>
 
     <div id="content">
+        <div id="geo-tooltip" class="geo-tooltip" style="opacity: 0"></div>
+
         <div id="details-box">
             <h4 id="selected-city-station-box-label">Nothing selected</h4>
             <h3 id="selected-city-station-box-name"></h3>
@@ -42,6 +44,8 @@
         // HTML element variables
         const selected_city_station_box_label = d3.select("#selected-city-station-box-label")
         const selected_city_station_box_name = d3.select("#selected-city-station-box-name");
+
+        
 
         function setupMap(bay_area_geo, city_geos) {
             console.log("Loaded map data");
@@ -106,6 +110,31 @@
             d3.selectAll("path.geo-map-city")
                 .on("click", function(event) {
                     selectCityMap(this);
+                })
+                .on("mouseover", function(event) {
+                    d3.select("#geo-tooltip")
+                        .transition()
+                        .style("opacity", 1);
+                })
+                .on("mousemove", function(event) {
+                    const city = this.__data__.city;
+                    const tooltip_text = `<b>${city}</b> <br> City`;
+                    
+                    d3.select("#geo-tooltip")
+                        .html(tooltip_text)
+                        .style("left", (event.clientX + 10) + "px")
+                        .style("top", (event.clientY - 28) + "px");
+                })
+                .on("mouseleave", function(event) {
+                    d3.select("#geo-tooltip")
+                        .transition()
+                        .style("opacity", 0)
+                        .end()
+                        .then(() => {
+                            d3.select("#geo-tooltip")
+                                .style("left", "0px")
+                                .style("top", "0px");
+                        })
                 })
                 .each(function(d) {
                     if (d.city === filter.selectedCity)
@@ -237,7 +266,6 @@
                     .map((d) => {
                         const [x, y] = projection([metadata.stations[d[0]].long, metadata.stations[d[0]].lat]);
                         // Include the station ID as the first element of the array, so that we know to which station the pie chart belongs when we click it
-                        // TODO: better structure please oh god
                         return {
                             station: d[0],
                             x: x,
@@ -268,6 +296,28 @@
                     .on("click", function(event) {
                         selectStationMap(this);
                     })
+                    .on("mouseover", function(event) {
+                        d3.select("#geo-tooltip")
+                            .transition()
+                            .style("opacity", 1);
+                    })
+                    .on("mousemove", function(event) {
+                        const station_id = this.__data__.station;
+                        const station_name = metadata.stations[station_id].name;
+                        const tooltip_text = `<b>${station_name}</b> <br> Station`;
+                        
+                        d3.select("#geo-tooltip")
+                            .html(tooltip_text)
+                            .style("left", (event.clientX + 10) + "px")
+                            .style("top", (event.clientY - 28) + "px");
+                    })
+                    .on("mouseleave", function(event) {
+                        d3.select("#geo-tooltip")
+                            .style("left", "0px")
+                            .style("top", "0px")
+                            .transition()
+                            .style("opacity", 0);
+                    });
                     
                 // NOTE: this is run everytime even though it only exists for when the filter is already initialized in the URL
                 let selected_station_pie = d3.selectAll("g.station-pie")
@@ -398,15 +448,15 @@
 
         console.log("Loading data...");
 
-        metadata_data = d3.json("../data/metadata.json");
-        trip_small_data = d3.csv("../data/trip_small.csv");
-        status_small_data = d3.csv("../data/status_small.csv");
+        const metadata_data = d3.json("../data/metadata.json");
+        const trip_small_data = d3.csv("../data/trip_small.csv");
+        const status_small_data = d3.csv("../data/status_small.csv");
 
-        bay_area_geodata = d3.json("../data/Bay Area Counties.geojson")
-        mountain_view_geodata = d3.json("../data/mountain_view.geojson");
-        palo_alto_geodata = d3.json("../data/palo_alto.geojson");
-        redwood_city_geodata = d3.json("../data/redwood_city.geojson");
-        san_jose_geodata = d3.json("../data/san_jose.geojson");
+        const bay_area_geodata = d3.json("../data/Bay Area Counties.geojson")
+        const mountain_view_geodata = d3.json("../data/mountain_view.geojson");
+        const palo_alto_geodata = d3.json("../data/palo_alto.geojson");
+        const redwood_city_geodata = d3.json("../data/redwood_city.geojson");
+        const san_jose_geodata = d3.json("../data/san_jose.geojson");
 
         Promise.all([bay_area_geodata, mountain_view_geodata, palo_alto_geodata, redwood_city_geodata, san_jose_geodata])
             .then((geos) => {
