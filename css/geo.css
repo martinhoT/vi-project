@@ -5,7 +5,7 @@
 .geo-map-city {
     cursor: pointer;
 }
-
+/* 
 .geo-map-city:hover {
     stroke-width: 3px;
     transition: 0.2s;
@@ -13,22 +13,30 @@
 
 .geo-map-city-selected {
     stroke-width: 3px;
-}
+} */
 
 .station-pie {
     cursor: pointer;
-    stroke: salmon;
+}
+
+g.station-pie {
     stroke-width: 1px;
 }
 
 .station-pie:hover {
     stroke: black;
-    stroke-width: 3px;
     transition: 0.2s;
+}
+
+g.station-pie:hover {
+    stroke-width: 3px;
 }
 
 .station-pie-selected {
     stroke: black;
+}
+
+g.station-pie-selected {
     stroke-width: 3px;
 }
 

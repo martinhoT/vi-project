@@ -47,7 +47,17 @@ function clientBarSetup(element, width, height, top, right, bottom, left) {
         .attr("dy", ".35em")
         .style("text-anchor", "end")
         .text((d) => d);
-    
+
+    // Add Y-axis title
+    svg.select("text.title-y")
+        .attr("transform", "rotate(-90)")
+        .attr("y", -margin.left + 10)
+        .attr("x", -h / 2)
+        .attr("dy", "1em")
+        .style("text-anchor", "middle")
+        .style("font-size", "14px")
+        .text("Count");
+
     return {
         svg: svg,
         w: w,
@@ -69,9 +79,11 @@ function clientBarUpdate(bar_data, chart_attributes) {
 
     // Create rectangles based on the counts
     svg.selectAll("rect.data")
-        .data(bar_data)
+        .data(bar_data.sort((a, b) => d3.ascending(a[0], b[0])))
         .join("rect")
         .classed("data", true)
+        .transition()
+        .duration(1000)
         .attr("x", function (d, i) {
             return (i * (w / bar_data.length));
         })  
@@ -100,25 +112,11 @@ function clientBarUpdate(bar_data, chart_attributes) {
     var xAxis = d3.axisBottom(xScale);
     var yAxis = d3.axisLeft(yScale);
 
-    // Append x and y axes to the SVG
-    svg.select("g.x-axis").call(xAxis);
-    svg.select("g.y-axis").call(yAxis);
-
-    // Add title to the chart
-    svg.select("text.title")
-        .attr("x", w / 2)
-        .attr("y", -margin.top / 2.3)
-        .attr("text-anchor", "middle")
-        .style("font-size", "16px")
-        .text("Subscription Types Occurrences");
-
-    // Add Y-axis title
-    svg.select("text.title-y")
-        .attr("transform", "rotate(-90)")
-        .attr("y", -margin.left + 10)
-        .attr("x", -h / 2)
-        .attr("dy", "1em")
-        .style("text-anchor", "middle")
-        .style("font-size", "14px")
-        .text("Count");
+    // Update x and y axes
+    svg.select("g.x-axis")
+        .transition()    
+        .call(xAxis);
+    svg.select("g.y-axis")
+        .transition()
+        .call(yAxis);
 }

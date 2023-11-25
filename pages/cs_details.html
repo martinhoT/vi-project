@@ -69,10 +69,6 @@
     <script src="charts/geo_map.js"></script>
     <script>
 
-        // TODO: ascending checkbox not on by default
-        // TODO: if all values are 0 then the bars will be drawn anyway, but they should be hidden
-        // TODO: maybe the X-axis highlight of the selected city/station could be better (only bold...?)
-
         let data_update_callbacks = [];
         d3.select("#content").on("data-update", () => {
             data_update_callbacks.forEach((callback) => callback());
@@ -110,10 +106,10 @@
             let components = undefined;
 
             function zoom_callback(transform) {
-                // Scale the pie charts according to the zoom transform (inversely proportional to keep the same size), but with the same positioning
+                // Scale the station circles according to the zoom transform (inversely proportional to keep the same size)
                 components.map.selectAll("circle.station-pie")
                     .attr("r", station_circle_radius / transform.k)
-                    .attr("stroke-width", 1 / transform.k);
+                    .attr("stroke-width", 2 / transform.k);
             }
 
             components = geoMapSetup("#map-selector", 500, 500, bay_area_geo, city_geos, zoom_callback);
@@ -157,21 +153,21 @@
                 .on("click", function(event) {
                     selectCityMap(this);
                 })
-                .on("mouseover", function(event) {
+                .on("mouseenter.tooltip", function(event) {
                     d3.select("#geo-tooltip")
                         .transition()
                         .style("opacity", 1);
                 })
-                .on("mousemove", function(event) {
+                .on("mousemove.tooltip", function(event) {
                     const city = this.__data__.city;
                     const tooltip_text = `<b>${city}</b> <br> City`;
                     
                     d3.select("#geo-tooltip")
                         .html(tooltip_text)
-                        .style("left", (event.clientX + 10) + "px")
+                        .style("left", (event.clientX + 28) + "px")
                         .style("top", (event.clientY - 28) + "px");
                 })
-                .on("mouseleave", function(event) {
+                .on("mouseleave.tooltip", function(event) {
                     d3.select("#geo-tooltip")
                         .transition()
                         .style("opacity", 0);
@@ -200,11 +196,11 @@
                 .attr("r", station_circle_radius)
                 .attr("fill", "salmon")
                 .attr("stroke", d3.color("salmon").darker(1))
-                .attr("stroke-width", 1)
+                .attr("stroke-width", () => 2 / d3.zoomTransform(components.projection).k)
                 .on("click", function(event) {
                     selectStationMap(this);
                 })
-                .on("mouseover", function(event) {
+                .on("mouseenter", function(event) {
                     d3.select("#geo-tooltip")
                         .transition()
                         .style("opacity", 1);
@@ -216,7 +212,7 @@
                     
                     d3.select("#geo-tooltip")
                         .html(tooltip_text)
-                        .style("left", (event.clientX + 10) + "px")
+                        .style("left", (event.clientX + 28) + "px")
                         .style("top", (event.clientY - 28) + "px");
                 })
                 .on("mouseleave", function(event) {
@@ -505,7 +501,8 @@
 
                 // Mark the selected station/city in bold on the X axis
                 city_graph.selectAll(".x-axis .tick text")
-                    .style("font-weight", (d) => (d === filter.selectedCity) ? "bold" : "normal");
+                    .style("font-weight", (d) => (d === filter.selectedCity) ? "bold" : "normal")
+                    .style("color", (d) => (d === filter.selectedCity) ? "var(--filter-accent)" : "black");
 
                 d3.select("#content-traffic-stacked").property("disabled", true);
                 content_title_selected.text(filter.selectedCity);
@@ -534,7 +531,8 @@
 
                 // Mark the selected station/city in bold on the X axis
                 station_graph.selectAll(".x-axis .tick text")
-                    .style("font-weight", (d) => (d === metadata.stations[filter.selectedStation].name) ? "bold" : "normal");
+                    .style("font-weight", (d) => (d === metadata.stations[filter.selectedStation].name) ? "bold" : "normal")
+                    .style("color", (d) => (d === metadata.stations[filter.selectedStation].name) ? "var(--filter-accent)" : "black");
 
                 d3.select("#content-traffic-stacked").property("disabled", false);
                 content_title_selected.text(metadata.stations[filter.selectedStation].name);
@@ -585,7 +583,6 @@
             }
 
             console.log("Initializing visualizations (status data)");
-            // TODO: no need to update for all filters but time
             data_update_callbacks.push(updateData);
             updateData();
         }

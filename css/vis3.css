@@ -1,8 +1,13 @@
 .vis-grid {
     display: grid;
     grid-template-columns: 2.5fr 1fr;
+    grid-template-rows: 1fr 1fr;
     gap: 10px;
     grid-auto-rows: minmax(100px, auto);
+}
+
+#content-traffic-vis {
+    height: 400px;
 }
 
 #content-bike-usage-table {
@@ -22,7 +27,7 @@
     padding: 8px;
 }
 
-#content-bike-usage > input {
+#content-bike-usage > *:first-child {
     display: block;
 }
 
