@@ -4,16 +4,12 @@
 
 .geo-map-city {
     cursor: pointer;
-}
-/* 
-.geo-map-city:hover {
-    stroke-width: 3px;
     transition: 0.2s;
 }
 
 .geo-map-city-selected {
-    stroke-width: 3px;
-} */
+    stroke: black;
+}
 
 .station-pie {
     cursor: pointer;

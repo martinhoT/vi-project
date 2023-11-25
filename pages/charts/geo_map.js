@@ -38,20 +38,17 @@ function geoMapSetup(element, width, height, bay_area_geo, city_geos, zoom_callb
             .attr("stroke-width", 2)
             .on("mouseenter.city", function() {
                 d3.select(this)
-                    .transition()
-                    .attr("stroke", "black");
+                    .classed("geo-map-city-selected", true);
                 }
             )
             .on("click.city", function() {
                 d3.selectAll("path.geo-map-city")
                     .property("city-selected", false)
-                    .transition()
-                    .attr("stroke", (d) => d3.color(city_color(d.city)).darker(1));
+                    .classed("geo-map-city-selected", false);
 
                 d3.select(this)
                     .property("city-selected", true)
-                    .transition()
-                    .attr("stroke", "black");
+                    .classed("geo-map-city-selected", true);
             })
             .on("mouseleave.city", function() {
                 if (d3.select(this).property("city-selected")) {
@@ -59,8 +56,7 @@ function geoMapSetup(element, width, height, bay_area_geo, city_geos, zoom_callb
                 }
 
                 d3.select(this)
-                    .transition()
-                    .attr("stroke", d3.color(city_color(city_geo.city)).darker(1));
+                    .classed("geo-map-city-selected", false);
             })
     }
 
