@@ -45,8 +45,6 @@
         const selected_city_station_box_label = d3.select("#selected-city-station-box-label")
         const selected_city_station_box_name = d3.select("#selected-city-station-box-name");
 
-        
-
         function setupMap(bay_area_geo, city_geos) {
             console.log("Loaded map data");
 
@@ -63,14 +61,14 @@
             function zoom_callback(transform) {
                 // Scale the pie charts according to the zoom transform (inversely proportional to keep the same size), but with the same positioning
                 components.map.selectAll("g.station-pie").attr("transform", (d) => `translate(${d.x}, ${d.y}) scale(${1 / transform.k})`);
-                
+
                 // Scale the vector widths according to the transform scale
                 if (trip_vector_width_scale !== undefined) {
                     components.map.selectAll("g.trip-vectors path").attr("stroke-width", (d) => trip_vector_width_scale(d.total_trips) / transform.k);
                 }
             }
 
-            components = geoMapSetup("#content", "100vw", "calc(100vh - 56px)", bay_area_geo, city_geos, zoom_callback);
+            components = geoMapSetup("#content", "100vw", "100%", bay_area_geo, city_geos, zoom_callback);
 
             components.map
                 .on("click", function(event) {
@@ -111,21 +109,21 @@
                 .on("click", function(event) {
                     selectCityMap(this);
                 })
-                .on("mouseover", function(event) {
+                .on("mouseenter.tooltip", function(event) {
                     d3.select("#geo-tooltip")
                         .transition()
                         .style("opacity", 1);
                 })
-                .on("mousemove", function(event) {
+                .on("mousemove.tooltip", function(event) {
                     const city = this.__data__.city;
                     const tooltip_text = `<b>${city}</b> <br> City`;
                     
                     d3.select("#geo-tooltip")
                         .html(tooltip_text)
-                        .style("left", (event.clientX + 10) + "px")
+                        .style("left", (event.clientX + 28) + "px")
                         .style("top", (event.clientY - 28) + "px");
                 })
-                .on("mouseleave", function(event) {
+                .on("mouseleave.tooltip", function(event) {
                     d3.select("#geo-tooltip")
                         .transition()
                         .style("opacity", 0)
@@ -134,7 +132,7 @@
                             d3.select("#geo-tooltip")
                                 .style("left", "0px")
                                 .style("top", "0px");
-                        })
+                        }, () => {}); // we don't care if the transition was interrupted
                 })
                 .each(function(d) {
                     if (d.city === filter.selectedCity)
@@ -288,6 +286,7 @@
                     .data(pie_data)
                     .join("g")
                         .classed("station-pie", true)
+                        .attr("stroke", d3.color("salmon").darker(1))
                         .attr("transform", (d) => {
                             return `translate(${d.x}, ${d.y}) scale(${1 / d3.zoomTransform(map.node()).k})`;
                         });
@@ -296,7 +295,7 @@
                     .on("click", function(event) {
                         selectStationMap(this);
                     })
-                    .on("mouseover", function(event) {
+                    .on("mouseenter", function(event) {
                         d3.select("#geo-tooltip")
                             .transition()
                             .style("opacity", 1);
@@ -308,15 +307,19 @@
                         
                         d3.select("#geo-tooltip")
                             .html(tooltip_text)
-                            .style("left", (event.clientX + 10) + "px")
+                            .style("left", (event.clientX + 28) + "px")
                             .style("top", (event.clientY - 28) + "px");
                     })
                     .on("mouseleave", function(event) {
                         d3.select("#geo-tooltip")
-                            .style("left", "0px")
-                            .style("top", "0px")
                             .transition()
-                            .style("opacity", 0);
+                            .style("opacity", 0)
+                            .end()
+                            .then(() => {
+                                d3.select("#geo-tooltip")
+                                    .style("left", "0px")
+                                    .style("top", "0px")
+                            }, () => {}); // we don't care if the transition was interrupted
                     });
                     
                 // NOTE: this is run everytime even though it only exists for when the filter is already initialized in the URL

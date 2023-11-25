@@ -11,7 +11,7 @@
 
     <div id="content" class="vis-grid">
         <div id="content-traffic">
-            <h2>
+            <h2 class="chart-title">
                 Global bike traffic for each
                 <select name="content-traffic-class" id="content-traffic-class" autocomplete="off">
                     <option value="city" selected>City</option>
@@ -42,12 +42,18 @@
         </div>
 
         <div id="content-client-total-trips">
+            <h2 class="chart-title">Total trips made by each client type</h2>
 
             <div id="content-client-total-trips-vis"></div>
         </div>
         
         <div id="content-bike-usage">
-            <input id="content-bike-usage-bins" name="content-bike-usage-bins" type="number" value="20" min="1" />
+            <div>
+                <h2 class="chart-title">Bike usage</h2>
+
+                Number of bins:
+                <input id="content-bike-usage-bins" name="content-bike-usage-bins" type="number" value="20" min="1" />
+            </div>
 
             <div id="content-bike-usage-vis"></div>
             
@@ -66,6 +72,7 @@
         </div>
 
         <div id="content-client-length-trips">
+            <h2 class="chart-title">Average length of trips made by each client type</h2>
 
             <div id="content-client-length-trips-vis"></div>
         </div>
@@ -80,8 +87,6 @@
     <script src="charts/trip_bar.js"></script>
     <script>
 
-        // TODO: ascending checkbox not on by default
-        // TODO: client type chart rects change position sometimes
         // TODO: client type chart legend makes no sense when it could be applied to X axis
 
         let data_update_callbacks = [];
@@ -492,7 +497,7 @@
             .then((metadata) => {
                 setupFilters(metadata,
                     ["#content-traffic", "#content-client-total-trips", "#content-client-length-trips"],
-                    ["#content-traffic", "#content-client-total-trips", "#content-client-length-trips"],  // NOTE: ideally the client-* graphs shouldn't be here, but it complicates stuff too much otherwise...
+                    ["#content-traffic", "#content-client-total-trips", "#content-client-length-trips"],  // TODO: ideally the client-* graphs shouldn't be here, but it complicates stuff too much otherwise...
                     ["#content-traffic", "#content-client-total-trips", "#content-client-length-trips", "#content-bike-usage"]
                 );
 
