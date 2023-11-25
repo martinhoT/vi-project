@@ -228,7 +228,8 @@ function addTimeSlider(initialLeft, initialRight, domain) {
         if (range[1] == x.domain()[1]) {
             d3.select("#filter-time-play")
                 .property("value", "stopped")
-                .classed("active", false);
+                .classed("btn-danger", false)
+                .classed("btn-dark", true);
             
             clearInterval(advanceMonthPlayInterval);
             advanceMonthPlayInterval = undefined;

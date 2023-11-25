@@ -51,7 +51,18 @@
 
             <div id="content-bike-usage-vis"></div>
             
-            <div id="content-bike-usage-table"></div>
+            <table id="content-bike-usage-table" class="table">
+                <thead>
+                    <th>Bike ID</th>
+                    <th>Total duration (hours)</th>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>...</td>
+                        <td>...</td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
 
         <div id="content-client-length-trips">
@@ -212,7 +223,7 @@
                 .attr("width", width + margin.left + margin.right)
                 .attr("height", height + margin.top + margin.bottom)
                 .append("g")
-                .attr("transform", `translate(${margin.left},${margin.top})`);
+                .attr("transform", `translate(${margin.left}, ${margin.top})`);
 
             // Generate options for the dropdown dynamically
             const nBinsSelector = d3.select("#content-bike-usage-bins");
@@ -230,40 +241,19 @@
                 .attr("class", "y-axis");
 
             // Function to display information in a table
-            function displayTable(data) {
-                const tableContainer = d3.select("#content-bike-usage-table");
-                tableContainer.html(""); // Clear previous content
-
-                const table = tableContainer.append("table").classed("table", true);
-                const thead = table.append("thead");
-                const tbody = table.append("tbody");
-
-                // Append header row
-                thead.append("tr")
-                    .selectAll("th")
-                    .data(["Bike ID", "Total Duration (hours)"])
-                    .enter()
-                    .append("th")
-                    .text(d => d);
-
+            function updateTable(data) {
                 // Append data rows
-                const rows = tbody.selectAll("tr")
+                const rows = d3.select("#content-bike-usage-table")
+                    .select("tbody")
+                    .selectAll("tr")
                     .data(data)
-                    .enter()
-                    .append("tr");
+                    .join("tr");
 
                 // Populate data in the table
                 const cells = rows.selectAll("td")
                     .data(d => [d.bike, d.total_duration.toFixed(2)])
-                    .enter()
-                    .append("td")
+                    .join("td")
                     .text(d => d);
-
-                // Add some basic styling
-                table.attr("border", "1");
-                table.style("border-collapse", "collapse");
-                table.selectAll("th, td").style("padding", "8px");
-                table.selectAll("th").style("background-color", "#f2f2f2");
             }
 
             return (data) => {
@@ -305,24 +295,68 @@
                         .call(d3.axisLeft(yScale));
 
                     // Create the bars
-                    const bars = svg.selectAll("rect")
+                    svg.selectAll("rect.data-rect")
                         .data(bins)
                         .join("rect")
-                        .style("cursor", "pointer")
+                        .classed("data-rect", true)
                         .style("fill", "#69b3a2")
-
-                        // Add event listener to the bars
-                        .on("click", function (event, d) {
-                            // Display information in a table
-                            displayTable(d.sort((a, b) => d3.ascending(a.total_duration, b.total_duration)));
-                        })
-
                         .transition()
                         .duration(1000)
                             .attr("x", d => xScale(d.x0))
                             .attr("y", d => yScale(d.length)) // Use d.length to get the count of bikes in each bin
                             .attr("width", d => xScale(d.x1) - xScale(d.x0))
                             .attr("height", d => height - yScale(d.length)); // Adjust the height based on the count
+                    
+                    // Create bars that are used solely for selection
+                    svg.selectAll("rect.selector-rect")
+                        .data(bins.filter(d => d.length > 0))
+                        .join("rect")
+                        .classed("selector-rect", true)
+                        .property("selected", false)
+                        .style("opacity", "0")
+                        .style("fill", "none")
+                        .style("stroke", "#000")
+                        .style("stroke-width", "0px")
+                        .style("cursor", "pointer")
+                        .style("pointer-events", "fill")
+
+                        // Add event listener to the bars
+                        .on("click", function (event, d) {
+                            d3.selectAll("rect.selector-rect")
+                                .style("opacity", "0")
+                                .style("stroke-width", "0px")
+                                .property("selected", false);
+                            
+                            d3.select(this)
+                                .style("opacity", "1")
+                                .style("stroke-width", "3px")
+                                .property("selected", true);
+                            // Display information in a table
+                            updateTable(d.sort((a, b) => d3.ascending(a.total_duration, b.total_duration)));
+                        })
+                        .on("mouseover", function (event, d) {
+                            if (d3.select(this).property("selected") == true) {
+                                return;
+                            }
+
+                            d3.select(this)
+                                .style("opacity", "0.5")
+                                .style("stroke-width", "2px");
+                        })
+                        .on("mouseout", function (event, d) {
+                            if (d3.select(this).property("selected") == true) {
+                                return;
+                            }
+
+                            d3.select(this)
+                                .style("opacity", "0")
+                                .style("stroke-width", "0px");
+                        })
+
+                        .attr("x", d => xScale(d.x0))
+                        .attr("y", d => yScale.range()[1])
+                        .attr("width", d => xScale(d.x1) - xScale(d.x0))
+                        .attr("height", d => yScale.range()[0]); // Constant height to facilitate selection of small bins
                 }
 
                 // Event listener for the number input
