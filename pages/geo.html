@@ -30,8 +30,6 @@
     <script src="charts/geo_map.js"></script>
     <script>
 
-        // TODO: city stroke-width doesn't scale with zoom
-
         let data_update_callbacks = [];
         d3.select("#content").on("data-update", () => {
             data_update_callbacks.forEach((callback) => callback());
@@ -80,7 +78,9 @@
 
                     selected_city_station_box_label.text("Nothing selected");
                     selected_city_station_box_name.text("");
-                    d3.selectAll("path.geo-map-city").classed("geo-map-city-selected", false);
+                    d3.selectAll("path.geo-map-city")
+                        .property("city-selected", false)
+                        .classed("geo-map-city-selected", false);
                     d3.selectAll("g.station-pie").classed("station-pie-selected", false);
 
                     filter.selectedStation = undefined;
@@ -95,9 +95,13 @@
 
                 selected_city_station_box_label.text("Selected city");
                 selected_city_station_box_name.text(city);
-                d3.selectAll("path.geo-map-city").classed("geo-map-city-selected", false);
+                d3.selectAll("path.geo-map-city")
+                    .property("city-selected", false)
+                    .classed("geo-map-city-selected", false);
                 d3.selectAll("g.station-pie").classed("station-pie-selected", false);
-                d3.select(city_elem).classed("geo-map-city-selected", true);
+                d3.select(city_elem)
+                    .property("city-selected", true)
+                    .classed("geo-map-city-selected", true);
 
                 if (!visual_only) {
                     filter.selectCity(city);
@@ -241,7 +245,9 @@
 
                 selected_city_station_box_label.text("Selected station");
                 selected_city_station_box_name.text(metadata.stations[station_id].name);
-                d3.selectAll("path.geo-map-city").classed("geo-map-city-selected", false);
+                d3.selectAll("path.geo-map-city")
+                    .property("city-selected", false)
+                    .classed("geo-map-city-selected", false);
                 d3.selectAll("g.station-pie").classed("station-pie-selected", false);
                 d3.select(station_elem).classed("station-pie-selected", true);
 
