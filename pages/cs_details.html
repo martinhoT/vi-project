@@ -305,12 +305,14 @@
                 .style("text-anchor", "middle")
                 .text("Bikes Available");
 
-            const lineChart = svg.append("path")
+            const chartContent = svg.append("g");
+
+            const lineChart = chartContent.append("path")
                 .attr("fill", "none")
                 .attr("stroke", "steelblue")
                 .attr("stroke-width", 1.5);
 
-            const lineChartMax = svg.append("line")
+            const lineChartMax = chartContent.append("line")
                 .attr("stroke", "red")
                 .attr("stroke-width", 1.5)
                 .attr("stroke-dasharray", "4");
@@ -392,6 +394,9 @@
                 .text("Capacity");
 
             return (data) => {
+                if (filter.selectedCity === undefined && filter.selectedStation === undefined)
+                    return;
+
                 // If we selected a city, then we need to average the availability on all of the city's stations
                 if (filter.selectedCity !== undefined)
                     data = Array.from(d3.rollup(data, g => d3.mean(g.map((v) => v.bikes_available_avg)), d => d.date).entries())
@@ -434,7 +439,7 @@
                     .attr("y2", yScale(maxBikes));
                 
                 // Add hoverable points to the line chart
-                svg.selectAll("circle")
+                chartContent.selectAll("circle")
                     .data(data)
                     .join("circle")
                     .attr("fill", "steelblue")
