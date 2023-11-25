@@ -153,6 +153,7 @@ function tripBarSetup(element, att) {
     // Add X axis label
     outer_svg.append("text")
         .attr("transform", "translate(" + (w / 2) + " ," + (h + att.margin.top) + ")")
+        .attr("y", 220 - att.margin.left)
         .style("text-anchor", "middle")
         .text(att.x_label);
 
