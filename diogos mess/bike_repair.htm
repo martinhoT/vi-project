@@ -9,14 +9,18 @@
     <style>
         /* Add some styling for the table container */
         #table-container {
-            max-height: 400px; /* Set the maximum height */
-            overflow-y: auto; /* Enable vertical scrolling */
-            margin-left: 20px; /* Adjust margin to separate from the histogram */
+            max-height: 400px;
+            /* Set the maximum height */
+            overflow-y: auto;
+            /* Enable vertical scrolling */
+            margin-left: 20px;
+            /* Adjust margin to separate from the histogram */
         }
 
         /* Add styling for the graph container */
         #my_dataviz {
-            flex: 1; /* Let it take up the available space */
+            flex: 1;
+            /* Let it take up the available space */
         }
     </style>
 </head>
@@ -126,10 +130,24 @@
                     displayTable(d);
                 });
 
-                // Add x-axis
+                // Remove existing x-axis
+                svg.select(".x-axis").remove();
+
+                // Add new x-axis
                 svg.append("g")
+                    .attr("class", "x-axis")
                     .attr("transform", `translate(0, ${height})`)
                     .call(d3.axisBottom(xScale));
+
+                 // Remove existing x-axis label
+    svg.select(".x-axis-label").remove();
+
+// Add new x-axis label
+svg.append("text")
+    .attr("class", "x-axis-label")
+    .attr("transform", `translate(${width / 2},${height + margin.top + 20})`)
+    .style("text-anchor", "middle")
+    .text("Total Duration");
 
                 // Remove existing y-axis
                 svg.select(".y-axis").remove();
@@ -138,6 +156,16 @@
                 svg.append("g")
                     .attr("class", "y-axis")
                     .call(d3.axisLeft(yScale));
+
+                // Add y-axis label
+                svg.append("text")
+                    .attr("transform", "rotate(-90)")
+                    .attr("y", 0 - margin.left)
+                    .attr("x", 0 - height / 2)
+                    .attr("dy", "1em")
+                    .style("text-anchor", "middle")
+                    .text("Number of Bikes");
+
             }
 
             // Function to display information in a table
