@@ -19,6 +19,13 @@ body {
     height: 100vh;
 }
 
+.padded {
+    padding-left: 3rem;
+    padding-right: 3rem;
+    padding-top: 6rem !important; /* !important is needed because of the padding-top: 56px; of #content */
+    padding-bottom: 6rem;
+}
+
 /* Filters */
 .filters {
     width: 100vw;
