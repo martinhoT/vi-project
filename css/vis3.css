@@ -4,3 +4,8 @@
     gap: 10px;
     grid-auto-rows: minmax(100px, auto);
 }
+
+#content-bike-usage-table {
+    overflow-y: scroll;
+    height: 500px;
+}

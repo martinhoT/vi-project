@@ -45,10 +45,13 @@
 
             <div id="content-client-total-trips-vis"></div>
         </div>
-
+        
         <div id="content-bike-usage">
+            <input id="content-bike-usage-bins" name="content-bike-usage-bins" type="number" value="20" min="1" />
 
             <div id="content-bike-usage-vis"></div>
+            
+            <div id="content-bike-usage-table"></div>
         </div>
 
         <div id="content-client-length-trips">
@@ -198,7 +201,139 @@
         }
 
         function visBikeUsage(metadata) {
-            return () => null;
+            // set the dimensions and margins of the graph
+            const margin = { top: 10, right: 30, bottom: 30, left: 80 },
+                width = 900 - margin.left - margin.right,
+                height = 400 - margin.top - margin.bottom;
+
+            // append the svg object to the body of the page
+            const svg = d3.select("#content-bike-usage-vis")
+                .append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                .attr("transform", `translate(${margin.left},${margin.top})`);
+
+            // Generate options for the dropdown dynamically
+            const nBinsSelector = d3.select("#content-bike-usage-bins");
+
+            // Create the scales
+            const xScale = d3.scaleLinear()
+                .range([0, width]);
+
+            // Add X-axis
+            const xAxis = svg.append("g")
+                .attr("transform", `translate(0, ${height})`);
+
+            // Add Y-axis
+            const yAxis = svg.append("g")
+                .attr("class", "y-axis");
+
+            // Function to display information in a table
+            function displayTable(data) {
+                const tableContainer = d3.select("#content-bike-usage-table");
+                tableContainer.html(""); // Clear previous content
+
+                const table = tableContainer.append("table").classed("table", true);
+                const thead = table.append("thead");
+                const tbody = table.append("tbody");
+
+                // Append header row
+                thead.append("tr")
+                    .selectAll("th")
+                    .data(["Bike ID", "Total Duration (hours)"])
+                    .enter()
+                    .append("th")
+                    .text(d => d);
+
+                // Append data rows
+                const rows = tbody.selectAll("tr")
+                    .data(data)
+                    .enter()
+                    .append("tr");
+
+                // Populate data in the table
+                const cells = rows.selectAll("td")
+                    .data(d => [d.bike, d.total_duration.toFixed(2)])
+                    .enter()
+                    .append("td")
+                    .text(d => d);
+
+                // Add some basic styling
+                table.attr("border", "1");
+                table.style("border-collapse", "collapse");
+                table.selectAll("th, td").style("padding", "8px");
+                table.selectAll("th").style("background-color", "#f2f2f2");
+            }
+
+            return (data) => {
+                // Aggregate total duration for each bike
+                const aggregatedData = d3.rollup(data, g => d3.sum(g, v => v.total_duration), d => d.bike_id);
+
+                let processedData = Array.from(aggregatedData, ([bike, totalDuration]) => ({
+                    bike: bike,
+                    total_duration: totalDuration / 3600 // convert from seconds to hours
+                }));
+
+                // Sort the data by total_duration
+                processedData.sort((a, b) => d3.ascending(a.total_duration, b.total_duration));
+                
+                xScale.domain([d3.min(processedData, d => d.total_duration), d3.max(processedData, d => d.total_duration)])
+                xAxis
+                    .transition()
+                    .call(d3.axisBottom(xScale));
+
+                function updateHistogram(numBins) {
+                    // Create a histogram function
+                    const histogram = d3.histogram()
+                        .value(d => d.total_duration)
+                        .domain([d3.min(processedData, d => d.total_duration), d3.max(processedData, d => d.total_duration)])
+                        .thresholds(d3.range(d3.min(processedData, d => d.total_duration), d3.max(processedData, d => d.total_duration), (d3.max(processedData, d => d.total_duration) - d3.min(processedData, d => d.total_duration)) / numBins));
+
+                    // Bin the data
+                    const bins = histogram(processedData);
+
+                    // Update the Y-axis scale
+                    const maxCount = d3.max(bins, bin => bin.length);
+
+                    const yScale = d3.scaleLinear()
+                        .domain([0, maxCount])
+                        .range([height, 0]);
+
+                    yAxis
+                        .transition()
+                        .call(d3.axisLeft(yScale));
+
+                    // Create the bars
+                    const bars = svg.selectAll("rect")
+                        .data(bins)
+                        .join("rect")
+                        .style("cursor", "pointer")
+                        .style("fill", "#69b3a2")
+
+                        // Add event listener to the bars
+                        .on("click", function (event, d) {
+                            // Display information in a table
+                            displayTable(d.sort((a, b) => d3.ascending(a.total_duration, b.total_duration)));
+                        })
+
+                        .transition()
+                        .duration(1000)
+                            .attr("x", d => xScale(d.x0))
+                            .attr("y", d => yScale(d.length)) // Use d.length to get the count of bikes in each bin
+                            .attr("width", d => xScale(d.x1) - xScale(d.x0))
+                            .attr("height", d => height - yScale(d.length)); // Adjust the height based on the count
+                }
+
+                // Event listener for the number input
+                nBinsSelector.on("change", function(event) {
+                    const numBins = this.value;
+                    updateHistogram(numBins);
+                });
+
+                // Update histogram with current number of bins
+                updateHistogram(nBinsSelector.property("value"));
+            };
         }
 
         function visClientTotalTrips(metadata) {
@@ -243,6 +378,32 @@
 
                 clientBarUpdate(Array.from(ratioMap.entries()), chart_attributes);
             };
+        }
+
+        function drawBikeUsageData(metadata, data, update_callbacks) {
+            console.log("Loaded trip data");
+
+            const dateParser = d3.utcParse("%Y-%-m-%-d");
+
+            for (const d of data) {
+                d["end_date"] = dateParser(d["end_date"]);
+                d["total_duration"] = +d["total_duration"];
+            }
+
+            function updateData() {
+                console.log("Filtering data...");
+
+                let dataFiltered = data.filter((d) => {
+                    return d.end_date >= filter.timeStart && d.end_date <= filter.timeEnd;
+                });
+                console.log("Data filtered");
+
+                update_callbacks.forEach((callback) => callback(dataFiltered));
+            }
+
+            console.log("Initializing visualizations (bike usage data)");
+            data_update_callbacks.push(updateData)
+            updateData();
         }
 
         function drawTripData(metadata, data, update_callbacks) {
@@ -290,6 +451,7 @@
         console.log("Loading data...");
 
         const trip_small_data = d3.csv("../data/trip_small.csv");
+        const bikes_usage_data = d3.csv("../data/bikes_usage.csv");
 
         // TODO: possible performance optimization: (pre-)sort trip data by date. With this, we don't need to filter, we can just use indexOf() and get the indices of the initial and end dates, and finally take the interval in between those indices (hint: use d3.bisector!)
         d3.json("../data/metadata.json")
@@ -301,14 +463,21 @@
                 );
 
                 const trip_data_draw_callbacks = [
-                    visBikeUsage(metadata),
                     visTraffic(metadata),
                     visClientTotalTrips(metadata),
                     visClientLengthTrips(metadata)
                 ];
 
+                const bikes_usage_draw_callbacks = [
+                    visBikeUsage(metadata)
+                ]
+
                 trip_small_data
                     .then((data) => drawTripData(metadata, data, trip_data_draw_callbacks))
+                    .catch(function(err){console.log(err)});
+
+                bikes_usage_data
+                    .then((data) => drawBikeUsageData(metadata, data, bikes_usage_draw_callbacks))
                     .catch(function(err){console.log(err)});
             })
             .catch(function(err){console.log(err)});            

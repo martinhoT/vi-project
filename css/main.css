@@ -4,7 +4,7 @@
 }
 
 body {
-    overflow-y: hidden;
+    overflow-y: scroll;
 }
 
 #nav {
@@ -22,7 +22,7 @@ body {
     width: 100vw;
     bottom: calc(0% - 76px);
     left: 0%;
-    position: absolute;
+    position: sticky;
     z-index: 50;
     transition: 0.5s;
 }
