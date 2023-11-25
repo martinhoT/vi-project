@@ -485,7 +485,7 @@
             const cities_labels = [...new Set(stations_id_name_pairs.map((p) => metadata.stations[p[0]].city))];
 
             const city_chart_attributes = tripBarSetup(city_graph.node(), {
-                width: 600,
+                width: 700,
                 height: 400,
                 margin: { top: 10, right: 30, bottom: 200, left: 50 },
                 labels: cities_labels,
@@ -494,7 +494,7 @@
                 x_label: "Cities",
             });
             const station_chart_attributes = tripBarSetup(station_graph.node(), {
-                width: 600,
+                width: 700,
                 height: 400,
                 margin: { top: 10, right: 30, bottom: 200, left: 50 },
                 labels: stations_labels,

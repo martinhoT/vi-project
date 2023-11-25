@@ -12,6 +12,10 @@ function tripBarSetup(element, att) {
     const totalWidth = att.width_scale * w;
     const h = att.height - att.margin.top - att.margin.bottom;
 
+    // The point at which the actual graph content is plotted
+    // Maybe margins should have been used for this but I'm not sure how they are being used at this point
+    const graphLeft = 80;
+
     const graph = d3.select(element)
 
     // Append the tooltip div to the graph
@@ -36,7 +40,7 @@ function tripBarSetup(element, att) {
             .style("z-index", 1)
             .style("width", w + "px")
             .style("height", (h + att.margin.bottom + att.margin.top) + "px")
-            .style("left", "60px")
+            .style("left", graphLeft + "px")
             .style("top", (-h - att.margin.bottom - att.margin.top) + "px");
 
     const scrollable_div_svg = scrollable_div.append("svg")
@@ -49,7 +53,8 @@ function tripBarSetup(element, att) {
         .classed("x-axis", true)
         .attr("transform", "translate(0," + (h + att.margin.top) + ")");
     outer_svg.append("g")
-        .classed("y-axis", true);
+        .classed("y-axis", true)
+        .attr("transform", "translate(" + (graphLeft - att.margin.left) + ", 0)");
     scrollable_div_svg.append("g")
         .classed("g-out", true);
     scrollable_div_svg.append("g")
@@ -159,7 +164,7 @@ function tripBarSetup(element, att) {
 
     // Add Y axis label
     outer_svg.append("text")
-        .attr("transform", "rotate(-90)")
+        .attr("transform", "rotate(-90) translate(-5, 0)")
         .attr("y", 0 - att.margin.left)
         .attr("x", 0 - h / 2)
         .attr("dy", "1em")
@@ -208,7 +213,7 @@ function tripBarUpdate(bar_data, chart_attributes, sort_type, sort_ascending, st
     scrollable_div_svg.select("g.x-axis")
         .call(d3.axisBottom(x).tickSize(0))
         .selectAll("text")
-            .attr("transform", "translate(-15,5), rotate(-90)")
+            .attr("transform", "translate(-15,10), rotate(-90)")
             .style("text-anchor", "end");
 
     // Update Y axis
