@@ -177,7 +177,7 @@ function tripBarSetup(element, att) {
         color: color,
         x: x,
         logarithmic: att.logarithmic,
-        tiptip: tooltip,
+        tooltip: tooltip,
         
         sortContent: sortContent,
         truncateLabel: truncateLabel,
