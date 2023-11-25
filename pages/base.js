@@ -28,33 +28,59 @@ $.get("bases/nav.html", function(data) {
     $("#nav").replaceWith(data);
     
     $("#nav").ready(function() {
+        function goTo(loc) {
+            if (filter.timeStart !== undefined)
+                currentURL.searchParams.set("timeStart", filter.timeStart.getTime());
+            else
+                currentURL.searchParams.delete("timeStart");
+            if (filter.timeEnd !== undefined)
+                currentURL.searchParams.set("timeEnd", filter.timeEnd.getTime());
+            else
+                currentURL.searchParams.delete("timeEnd");
+            if (filter.selectedCity !== undefined)
+                currentURL.searchParams.set("selectedCity", filter.selectedCity);
+            else
+                currentURL.searchParams.delete("selectedCity");
+            if (filter.selectedStation !== undefined)
+                currentURL.searchParams.set("selectedStation", filter.selectedStation);
+            else
+                currentURL.searchParams.delete("selectedStation");
+            currentURL.searchParams.set("cityTraversal", filter.cityTraversal);
+            currentURL.searchParams.set("clientType", filter.clientType);
+            window.location.assign(loc.replace("-", "_") + ".html" + currentURL.search);
+        }
+
+        let currentLoc = undefined;
+
         for (const loc of ["intro", "geo", "cs-details", "global-details", "insights", "about"]) {
             let element = $("#nav-" + loc);
             if (element === null)
                 continue;
 
-            if (currentURL.pathname == `/pages/${loc.replace("-", "_")}.html`)
+            if (currentURL.pathname == `/pages/${loc.replace("-", "_")}.html`) {
                 element.addClass("active");
+                currentLoc = loc;
+            }
             
             else {
                 element.on("click", function() {
-                    if (filter.timeStart !== undefined)
-                        currentURL.searchParams.set("timeStart", filter.timeStart.getTime());
-                    if (filter.timeEnd !== undefined)
-                        currentURL.searchParams.set("timeEnd", filter.timeEnd.getTime());
-                    if (filter.selectedCity !== undefined)
-                        currentURL.searchParams.set("selectedCity", filter.selectedCity);
-                    else
-                        currentURL.searchParams.delete("selectedCity");
-                    if (filter.selectedStation !== undefined)
-                        currentURL.searchParams.set("selectedStation", filter.selectedStation);
-                    else
-                        currentURL.searchParams.delete("selectedStation");
-                    currentURL.searchParams.set("cityTraversal", filter.cityTraversal);
-                    currentURL.searchParams.set("clientType", filter.clientType);
-                    window.location.assign(loc.replace("-", "_") + ".html" + currentURL.search);
+                    goTo(loc);
                 });
             }
+
+            d3.select("#nav")
+                .select("#nav-refresh-filters")
+                .on("click", function() {
+                    filter.cityTraversal = 1;
+                    filter.clientType = 1;
+                    filter.timeStart = undefined;
+                    filter.timeEnd = undefined;
+                    filter.selectedCity = undefined;
+                    filter.selectedStation = undefined;
+                    
+                    // Refresh the current page
+                    goTo(currentLoc);
+                });
         }
     })
 });
@@ -163,7 +189,6 @@ function addTimeSlider(initialLeft, initialRight, domain) {
         .on('brush', brushed)
         .on('end', brushEnded)
             
-    
     var brushGroup = timeFilterSvg.append('g')
         .attr('class', 'brush')
         .attr('transform', 'translate(' + timeSliderLabelWidth + ',' + 0 + ')')
