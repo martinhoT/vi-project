@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,6 +8,7 @@
     <link rel="stylesheet" href="../css/vis2.css">
     <link rel="stylesheet" href="../css/geo.css">
 </head>
+
 <body>
     <div id="nav"></div>
 
@@ -23,13 +25,13 @@
 
             </div>
         </div>
-        
+
         <div class="vis-grid">
             <div id="content-traffic-specific">
                 <h2>
                     Bike traffic from/to other <span id="content-traffic-title-suffix">...</span>
                 </h2>
-                
+
                 <p>
                     Sort by
                     <select name="content-traffic-sort" id="content-traffic-sort" autocomplete="off">
@@ -38,20 +40,21 @@
                         <option value="incoming_trips">Incoming trips</option>
                         <option value="outgoing_trips">Outgoing trips</option>
                     </select>
-    
+
                     <input type="checkbox" name="content-traffic-sort-asc" id="content-traffic-sort-asc" checked>
                     Ascending
-    
+
                     <input type="checkbox" name="content-traffic-stacked" id="content-traffic-stacked" disabled>
                     Stacked
-                    <span style="cursor: help" data-toggle="tooltip" data-placement="top" title="Only makes sense for the Stations chart, the Cities one has a logarithmic scale on the Y axis">
+                    <span style="cursor: help" data-toggle="tooltip" data-placement="top"
+                        title="Only makes sense for the Stations chart, the Cities one has a logarithmic scale on the Y axis">
                         ⓘ
                     </span>
                 </p>
-    
+
                 <div id="content-traffic-specific-vis"></div>
             </div>
-    
+
             <div id="content-availability">
                 <h2>Bike availability</h2>
 
@@ -85,7 +88,7 @@
         const content_traffic_title_suffix = d3.select("#content-traffic-title-suffix");
         const content_title_selected = d3.select("#content-title-selected");
 
-        d3.select("#map-selector-opener").on("click", function(event) {
+        d3.select("#map-selector-opener").on("click", function (event) {
             const map_selector = d3.select("#map-selector");
             if (map_selector.style("display") === "block")
                 map_selector.style("display", "none");
@@ -117,7 +120,7 @@
             }
 
             components = geoMapSetup("#map-selector", 500, 500, bay_area_geo, city_geos, zoom_callback);
-            
+
             // Don't indicate that the map is clickable
             components.map.select("path.geo-map").style("cursor", "default");
 
@@ -154,29 +157,29 @@
             }
 
             d3.selectAll("path.geo-map-city")
-                .on("click", function(event) {
+                .on("click", function (event) {
                     selectCityMap(this);
                 })
-                .on("mouseover", function(event) {
+                .on("mouseover", function (event) {
                     d3.select("#geo-tooltip")
                         .transition()
                         .style("opacity", 1);
                 })
-                .on("mousemove", function(event) {
+                .on("mousemove", function (event) {
                     const city = this.__data__.city;
                     const tooltip_text = `<b>${city}</b> <br> City`;
-                    
+
                     d3.select("#geo-tooltip")
                         .html(tooltip_text)
                         .style("left", (event.clientX + 10) + "px")
                         .style("top", (event.clientY - 28) + "px");
                 })
-                .on("mouseleave", function(event) {
+                .on("mouseleave", function (event) {
                     d3.select("#geo-tooltip")
                         .transition()
                         .style("opacity", 0);
                 })
-                .each(function(d) {
+                .each(function (d) {
                     if (d.city === filter.selectedCity) {
                         selectCityMap(this, true);
                     }
@@ -201,30 +204,30 @@
                 .attr("fill", "salmon")
                 .attr("stroke", d3.color("salmon").darker(1))
                 .attr("stroke-width", 1)
-                .on("click", function(event) {
+                .on("click", function (event) {
                     selectStationMap(this);
                 })
-                .on("mouseover", function(event) {
+                .on("mouseover", function (event) {
                     d3.select("#geo-tooltip")
                         .transition()
                         .style("opacity", 1);
                 })
-                .on("mousemove", function(event) {
+                .on("mousemove", function (event) {
                     const station_id = this.__data__.station;
                     const station_name = stations_metadata[station_id].name;
                     const tooltip_text = `<b>${station_name}</b> <br> Station`;
-                    
+
                     d3.select("#geo-tooltip")
                         .html(tooltip_text)
                         .style("left", (event.clientX + 10) + "px")
                         .style("top", (event.clientY - 28) + "px");
                 })
-                .on("mouseleave", function(event) {
+                .on("mouseleave", function (event) {
                     d3.select("#geo-tooltip")
                         .transition()
                         .style("opacity", 0);
                 })
-                .each(function(d) {
+                .each(function (d) {
                     if (d.station === filter.selectedStation) {
                         selectStationMap(this, true);
                     }
@@ -237,11 +240,17 @@
         }
 
         function visAvailability(metadata) {
+            // tooltip
+            const tooltip = d3.select("#content-availability-vis")
+                .append("div")
+                .attr("class", "tooltip")
+                .style("opacity", 0);
+
             // Create the line chart
             const margin = { top: 50, right: 20, bottom: 50, left: 50 }; // Increased top and bottom margins
             const width = 900 - margin.left - margin.right;
             const height = 400 - margin.top - margin.bottom;
-            
+
             const svg = d3.select("#content-availability-vis")
                 .append("svg")
                 .attr("width", width + margin.left + margin.right)
@@ -262,7 +271,7 @@
             // Add X and Y axes
             const xAxis = svg.append("g")
                 .attr("transform", "translate(0," + height + ")");
-            
+
             xAxis
                 .append("text")
                 .attr("x", width / 2)
@@ -270,10 +279,9 @@
                 .attr("dy", "1em")
                 .style("text-anchor", "middle")
                 .text("Date");
-                // .call(d3.axisBottom(xScale))
 
             const yAxis = svg.append("g");
-            
+
             yAxis
                 .append("text")
                 .attr("transform", "rotate(-90)")
@@ -282,12 +290,24 @@
                 .attr("dy", "-2em")
                 .style("text-anchor", "middle")
                 .text("Bikes Available");
-                // .call(d3.axisLeft(yScale))
 
             const lineChart = svg.append("path")
                 .attr("fill", "none")
                 .attr("stroke", "steelblue")
-                .attr("stroke-width", 1.5);
+                .attr("stroke-width", 1.5)
+                .on("mouseover", function (event, d) {
+                    tooltip.transition()
+                        .duration(200)
+                        .style("opacity", .9);
+                    tooltip.html(d.date + "<br>Incoming Trips: " + d.bikes_available_avg)
+                        .style("left", (event.pageX) + "px")
+                        .style("top", (event.pageY - 28) + "px");
+                })
+                .on("mouseout", function (d) {
+                    tooltip.transition()
+                        .duration(500)
+                        .style("opacity", 0);
+                });
 
             const lineChartMax = svg.append("line")
                 .attr("stroke", "red")
@@ -314,15 +334,15 @@
             const legendHeight = 50;
 
             const drag = d3.drag()
-                .on("start", function(event) {
+                .on("start", function (event) {
                     d3.select(this).style("cursor", "grabbing");
                 })
-                .on("drag", function(event) {
+                .on("drag", function (event) {
                     const x = Math.min(width - legendWidth, Math.max(0, event.x - legendWidth / 2));
                     const y = Math.min(height - legendHeight, Math.max(0, event.y - legendHeight / 2));
                     d3.select(this).attr("transform", "translate(" + (x) + "," + (y) + ")");
                 })
-                .on("end", function(event) {
+                .on("end", function (event) {
                     d3.select(this).style("cursor", "grab");
                 });
 
@@ -339,7 +359,7 @@
 
             const legendAvailability = legendSvg.append("g")
                 .attr("transform", "translate(0, 20)");
-                
+
             legendAvailability.append("line")
                 .attr("x1", 0)
                 .attr("y1", 0)
@@ -347,15 +367,15 @@
                 .attr("y2", 0)
                 .attr("stroke", "steelblue")
                 .attr("stroke-width", 1.5);
-            
+
             legendAvailability.append("text")
                 .attr("x", 20)
                 .attr("y", 5)
                 .text("Average bikes available");
-            
+
             const legendMax = legendSvg.append("g")
                 .attr("transform", "translate(0, 40)");
-            
+
             legendMax.append("line")
                 .attr("x1", 0)
                 .attr("y1", 0)
@@ -364,7 +384,7 @@
                 .attr("stroke", "red")
                 .attr("stroke-width", 1.5)
                 .attr("stroke-dasharray", "4");
-            
+
             legendMax.append("text")
                 .attr("x", 20)
                 .attr("y", 5)
@@ -375,7 +395,7 @@
                 if (filter.selectedCity !== undefined)
                     data = Array.from(d3.rollup(data, g => d3.mean(g.map((v) => v.bikes_available_avg)), d => d.date).entries())
                         .map((d) => { return { date: d[0], bikes_available_avg: d[1] }; });
-                
+
                 // Determine the capacity line. If a city was selected, then we just outline the maximum availability found in the data
                 let maxBikes = undefined;
                 if (filter.selectedCity !== undefined)
@@ -404,15 +424,16 @@
                     .transition()
                     .duration(1000)
                     .attr("d", line);
-                    
+
                 // Update the maximum line
                 lineChartMax
                     .attr("x1", 0)
                     .attr("y1", yScale(maxBikes))
                     .attr("x2", width)
-                    .attr("y2", yScale(maxBikes));   
-            }
+                    .attr("y2", yScale(maxBikes));
+            };
         }
+
 
         function visTrafficSpecific(metadata) {
             // All hidden by default, unless a selection has been done
@@ -420,12 +441,12 @@
                 .style("display", "none");
             const station_graph = d3.select("#content-traffic-specific-vis").append("div")
                 .style("display", "none");
-            
+
             // NOTE: disadvantage of having the same array of stations: all stations will appear even if they have no trips for the given filters
             const stations_id_name_pairs = Object.entries(metadata.stations).map((s) => [s[0], s[1]["name"]]);
             const stations_labels = stations_id_name_pairs.map((p) => p[1]);
             const cities_labels = [...new Set(stations_id_name_pairs.map((p) => metadata.stations[p[0]].city))];
-            
+
             const city_chart_attributes = tripBarSetup(city_graph.node(), {
                 width: 600,
                 height: 400,
@@ -449,19 +470,19 @@
             let city_data = undefined;
             let station_data = undefined;
 
-            d3.select("#content-traffic-sort").on("input", function() {
+            d3.select("#content-traffic-sort").on("input", function () {
                 const stacked = d3.select("#content-traffic-stacked").property("checked");
                 city_chart_attributes.sortContent(this.value, d3.select("#content-traffic-sort-asc").property("checked"), stacked);
                 station_chart_attributes.sortContent(this.value, d3.select("#content-traffic-sort-asc").property("checked"), stacked);
             });
 
-            d3.select("#content-traffic-sort-asc").on("input", function() {
+            d3.select("#content-traffic-sort-asc").on("input", function () {
                 const stacked = d3.select("#content-traffic-stacked").property("checked");
                 city_chart_attributes.sortContent(d3.select("#content-traffic-sort").node().value, this.checked, stacked);
                 station_chart_attributes.sortContent(d3.select("#content-traffic-sort").node().value, this.checked, stacked);
             });
 
-            d3.select("#content-traffic-stacked").on("input", function() {
+            d3.select("#content-traffic-stacked").on("input", function () {
                 const sort_type = d3.select("#content-traffic-sort").node().value;
                 const sort_ascending = d3.select("#content-traffic-sort-asc").property("checked");
                 const stacked = d3.select("#content-traffic-stacked").property("checked");
@@ -491,7 +512,7 @@
                     end_city_counts[end_city] = (end_city_counts[end_city] || 0) + d.total_trips;
                 });
 
-                const city_counts_data = cities_labels.map(function(city) {
+                const city_counts_data = cities_labels.map(function (city) {
                     return { label: city, value_out: start_city_counts[city] || 0, value_in: end_city_counts[city] || 0 };
                 });
 
@@ -515,12 +536,12 @@
                 // Create data for the station graph
                 const start_station_counts = {};
                 const end_station_counts = {};
-                data.forEach(function(d) {
+                data.forEach(function (d) {
                     start_station_counts[d.start_station_id] = (start_station_counts[d.start_station_id] || 0) + d.total_trips;
                     end_station_counts[d.end_station_id] = (end_station_counts[d.end_station_id] || 0) + d.total_trips;
                 });
 
-                const station_counts_data = stations_id_name_pairs.map(function(p) {
+                const station_counts_data = stations_id_name_pairs.map(function (p) {
                     return { label: p[1], value_out: start_station_counts[p[0]] || 0, value_in: end_station_counts[p[0]] || 0 };
                 });
 
@@ -546,7 +567,7 @@
                     city_graph.style("display", "block");
                     drawCityBars(data);
                 }
-                
+
                 else if (filter.selectedStation !== undefined) {
                     city_graph.style("display", "none");
                     station_graph.style("display", "block");
@@ -573,14 +594,14 @@
                 console.log("Filtering status data...");
 
                 let dataFiltered = data.filter((d) => {
-                    return d.date >= filter.timeStart 
+                    return d.date >= filter.timeStart
                         && d.date <= filter.timeEnd
                         && (filter.selectedStation === undefined || d.station_id == filter.selectedStation)
                         && (filter.selectedCity === undefined || metadata.stations[d.station_id].city == filter.selectedCity);
                 });
 
                 console.log("Status data filtered");
-                
+
                 update_callbacks.forEach((callback) => callback(dataFiltered));
             }
 
@@ -639,7 +660,7 @@
         const trip_small_data = d3.csv("../data/trip_small.csv");
         const status_small_data = d3.csv("../data/status_small.csv");
         const metadata_data = d3.json("../data/metadata.json");
-        
+
         const bay_area_geodata = d3.json("../data/Bay Area Counties.geojson")
         const mountain_view_geodata = d3.json("../data/mountain_view.geojson");
         const palo_alto_geodata = d3.json("../data/palo_alto.geojson");
@@ -659,14 +680,14 @@
 
                 trip_small_data
                     .then((data) => drawTripData(metadata, data, trip_data_draw_callbacks))
-                    .catch(function(err){console.log(err)});
-                
+                    .catch(function (err) { console.log(err) });
+
                 status_small_data
                     .then((data) => drawStatusData(metadata, data, status_data_draw_callbacks))
-                    .catch(function(err){console.log(err)});
+                    .catch(function (err) { console.log(err) });
             })
-            .catch(function(err){console.log(err)});
-        
+            .catch(function (err) { console.log(err) });
+
         Promise.all([metadata_data, bay_area_geodata, mountain_view_geodata, palo_alto_geodata, redwood_city_geodata, san_jose_geodata])
             .then((datas) => {
                 let bay_area_geo = datas[1];
@@ -694,4 +715,5 @@
 
     </script>
 </body>
+
 </html>
