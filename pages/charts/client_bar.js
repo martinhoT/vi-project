@@ -26,28 +26,6 @@ function clientBarSetup(element, width, height, top, right, bottom, left) {
         .domain(["Customer", "Subscriber"])
         .range(["#FF7F0E", '#1F77B4']);
 
-    // Add legend
-    const legend = svg.selectAll(".legend")
-        .data(["Customer", "Subscriber"])
-        .join("g")
-        .attr("class", "legend")
-        .attr("transform", function(d, i) {
-            return "translate(0," + i * 20 + ")";
-        });
-
-    legend.append("rect")
-        .attr("x", w - 18)
-        .attr("width", 18)
-        .attr("height", 18)
-        .style("fill", (d) => color(d));
-
-    legend.append("text")
-        .attr("x", w - 24)
-        .attr("y", 9)
-        .attr("dy", ".35em")
-        .style("text-anchor", "end")
-        .text((d) => d);
-
     // Add Y-axis title
     svg.select("text.title-y")
         .attr("transform", "rotate(-90)")
@@ -78,7 +56,7 @@ function clientBarUpdate(bar_data, chart_attributes) {
     const max_count = Math.max(...bar_data.map(d => d[1]));
 
     // Create rectangles based on the counts
-    svg.selectAll("rect.data")
+    const bars = svg.selectAll("rect.data")
         .data(bar_data.sort((a, b) => d3.ascending(a[0], b[0])))
         .join("rect")
         .classed("data", true)
@@ -86,7 +64,7 @@ function clientBarUpdate(bar_data, chart_attributes) {
         .duration(1000)
         .attr("x", function (d, i) {
             return (i * (w / bar_data.length));
-        })  
+        })
         .attr("y", function (d) {
             return h - (h * d[1] / max_count);
         })
@@ -100,7 +78,7 @@ function clientBarUpdate(bar_data, chart_attributes) {
 
     // Create x and y scales
     var xScale = d3.scaleBand()
-        .domain(d3.range(bar_data.length))
+    .domain(bar_data.map(d => d[0])) 
         .range([0, w])
         .padding(0.1);
 
@@ -114,9 +92,10 @@ function clientBarUpdate(bar_data, chart_attributes) {
 
     // Update x and y axes
     svg.select("g.x-axis")
-        .transition()    
+        .transition()
         .call(xAxis);
     svg.select("g.y-axis")
         .transition()
         .call(yAxis);
+
 }
