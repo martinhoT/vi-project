@@ -6,14 +6,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bikes Over Time</title>
     <script src="https://d3js.org/d3.v6.min.js"></script>
+    <style>
+        .tooltip {
+            position: absolute;
+            background-color: lightblue;
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 5px;
+            pointer-events: none;
+        }
+    </style>
 </head>
 
 <body>
 
-    <!-- Container for the chart -->
     <div id="chart-container"></div>
 
-    <!-- Dropdown menu for station selection -->
     <div>
         <label for="station-select">Select Station:</label>
         <select id="station-select"></select>
@@ -23,10 +31,8 @@
         d3.csv("status_small.csv").then(function (data) {
             const dateParser = d3.utcParse("%Y-%-m-%-d");
 
-            // Extract unique stations
             const stations = Array.from(new Set(data.map(d => d.station_id)));
 
-            // Populate dropdown menu with stations
             const select = d3.select("#station-select");
             select
                 .selectAll("option")
@@ -35,13 +41,10 @@
                 .append("option")
                 .text(d => d);
 
-            // Initial station selection
             const selectedStation = select.property("value");
 
-            // Update chart based on selected station
             updateChart(selectedStation);
 
-            // Listen for changes in the dropdown menu
             select.on("change", function () {
                 const selectedStation = d3.select(this).property("value");
                 updateChart(selectedStation);
@@ -56,12 +59,10 @@
                         station: d["station_id"]
                     }));
 
-                // Create or update the line chart
-                const margin = { top: 50, right: 20, bottom: 50, left: 50 }; // Increased top and bottom margins
+                const margin = { top: 50, right: 20, bottom: 50, left: 50 };
                 const width = 900 - margin.left - margin.right;
                 const height = 400 - margin.top - margin.bottom;
 
-                // Remove previous chart elements
                 d3.select("#chart-container").selectAll("*").remove();
 
                 const svg = d3.select("#chart-container")
@@ -71,7 +72,11 @@
                     .append("g")
                     .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-                // Create a line chart
+                const tooltip = d3.select("body")
+                    .append("div")
+                    .attr("class", "tooltip")
+                    .style("opacity", 0);
+
                 const xScale = d3.scaleTime()
                     .domain(d3.extent(processedData, d => d.date))
                     .range([0, width]);
@@ -83,6 +88,7 @@
                 const line = d3.line()
                     .x(d => xScale(d.date))
                     .y(d => yScale(d.bikes));
+                console.log(line)
 
                 svg.append("path")
                     .datum(processedData)
@@ -91,7 +97,31 @@
                     .attr("stroke-width", 1.5)
                     .attr("d", line);
 
-                // Add x and y axis
+                    console.log(processedData)
+                    
+                // Add tooltip functionality 
+                svg.selectAll("rect")
+                    .data(processedData)
+                    .enter().append("rect")
+                    .attr("x", d => xScale(d.date) - 5)
+                    .attr("y", d => yScale(d.bikes) - 5)
+                    .attr("width", 10)
+                    .attr("height", 10)
+                    .attr("fill", "transparent")
+                    .on("mouseover", function (event, d) {
+                        tooltip.transition()
+                            .duration(200)
+                            .style("opacity", 0.9);
+                        tooltip.html(`Date: ${d.date.toLocaleDateString()}<br>Bikes Available: ${d.bikes}`)
+                            .style("left", (event.pageX + 5) + "px")
+                            .style("top", (event.pageY - 28) + "px");
+                    })
+                    .on("mouseout", function () {
+                        tooltip.transition()
+                            .duration(500)
+                            .style("opacity", 0);
+                    });
+
                 svg.append("g")
                     .attr("transform", "translate(0," + height + ")")
                     .call(d3.axisBottom(xScale))
@@ -112,7 +142,6 @@
                     .style("text-anchor", "middle")
                     .text("Bikes Available");
 
-                // Add a horizontal red line for the maximum y value
                 svg.append("line")
                     .attr("x1", 0)
                     .attr("y1", yScale(d3.max(processedData, d => d.bikes)))
@@ -120,10 +149,8 @@
                     .attr("y2", yScale(d3.max(processedData, d => d.bikes)))
                     .attr("stroke", "red")
                     .attr("stroke-width", 1.5)
-                    .attr("stroke-dasharray", "4"); // Optional: add a dashed line style
+                    .attr("stroke-dasharray", "4");
 
-
-                // Add title
                 svg.append("text")
                     .attr("x", width / 2)
                     .attr("y", 0 - (margin.top / 2))
@@ -132,13 +159,11 @@
                     .style("text-decoration", "underline")
                     .text("Bike availability");
 
-                // Add X axis label
                 svg.append("text")
-                    .attr("transform", "translate(" + (width / 2) + " ," + (height+30) + ")")
+                    .attr("transform", "translate(" + (width / 2) + " ," + (height + 30) + ")")
                     .style("text-anchor", "middle")
                     .text("Time");
 
-                // Add Y axis label
                 svg.append("text")
                     .attr("transform", "rotate(-90)")
                     .attr("y", 0 - margin.left)
