@@ -1,6 +1,31 @@
 .vis-grid {
     display: grid;
-    grid-template-columns: 3fr 2fr;
+    grid-template-columns: 2.5fr 1fr;
     gap: 10px;
     grid-auto-rows: minmax(100px, auto);
+}
+
+#content-bike-usage-table {
+    overflow-y: scroll;
+    height: 400px;
+    width: auto;
+    border-width: 1px;
+    border-collapse: collapse;
+}
+
+#content-bike-usage-table > thead > th {
+    padding: 8px;
+    background-color: #f2f2f2;
+}
+
+#content-bike-usage-table > tbody > tr > td {
+    padding: 8px;
+}
+
+#content-bike-usage > input {
+    display: block;
+}
+
+#content-bike-usage > div, #content-bike-usage > table {
+    display: inline-block;
 }

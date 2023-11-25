@@ -14,22 +14,6 @@ function tripBarSetup(element, att) {
 
     const graph = d3.select(element)
 
-    // Create a scrollable div which will contain the chart and X axis
-    const scrollable_div = graph.append("div")
-            .style("overflow-x", "scroll")
-            .style("-webkit-overflow-scrolling", "touch")
-            .style("position", "absolute")
-            .style("z-index", 1)
-            .style("width", w + "px")
-            .style("height", (h + att.margin.bottom + att.margin.top) + "px")
-            .style("left", "60px");
-
-    const scrollable_div_svg = scrollable_div.append("svg")
-            .classed("scrollable-svg", true)
-            .attr("width", totalWidth)
-            .attr("height", h + att.margin.bottom + att.margin.top)
-            .style("display", "block");
-
     // Append the tooltip div to the graph
     const tooltip = graph
         .append("div")
@@ -41,9 +25,25 @@ function tripBarSetup(element, att) {
         .classed("outer-svg", true)
         .attr("width", w + att.margin.left + att.margin.right + 150) // add some more space for the legend
         .attr("height", h + att.margin.top + att.margin.bottom)
-        .style("top", "0px")
         .append("g")
         .attr("transform", "translate(" + att.margin.left + "," + att.margin.top + ")");
+
+    // Create a scrollable div which will contain the chart and X axis
+    const scrollable_div = graph.append("div")
+            .style("overflow-x", "scroll")
+            .style("-webkit-overflow-scrolling", "touch")
+            .style("position", "relative")
+            .style("z-index", 1)
+            .style("width", w + "px")
+            .style("height", (h + att.margin.bottom + att.margin.top) + "px")
+            .style("left", "60px")
+            .style("top", (-h - att.margin.bottom - att.margin.top) + "px");
+
+    const scrollable_div_svg = scrollable_div.append("svg")
+            .classed("scrollable-svg", true)
+            .attr("width", totalWidth)
+            .attr("height", h + att.margin.bottom + att.margin.top)
+            .style("display", "block");
 
     scrollable_div_svg.append("g")
         .classed("x-axis", true)

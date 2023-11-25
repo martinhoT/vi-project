@@ -135,7 +135,6 @@ const changeSlider3ToggleState = function(filterId, state) {
 }
 
 // TODO: on brush single-click it disappears, let it stay?
-// TODO: add play button? seems like it would be useful for Vis1
 function addTimeSlider(initialLeft, initialRight, domain) {
     const timeSliderWidth = 200
     const timeSliderHeight = 20
@@ -229,7 +228,8 @@ function addTimeSlider(initialLeft, initialRight, domain) {
         if (range[1] == x.domain()[1]) {
             d3.select("#filter-time-play")
                 .property("value", "stopped")
-                .classed("active", false);
+                .classed("btn-danger", false)
+                .classed("btn-dark", true);
             
             clearInterval(advanceMonthPlayInterval);
             advanceMonthPlayInterval = undefined;
@@ -254,14 +254,16 @@ function addTimeSlider(initialLeft, initialRight, domain) {
         if (current_state == "playing") {
             d3.select(this)
                 .property("value", "stopped")
-                .classed("active", false);
+                .classed("btn-danger", false)
+                .classed("btn-dark", true);
 
             clearInterval(advanceMonthPlayInterval);
         }
         else if (current_state == "stopped") {
             d3.select(this)
                 .property("value", "playing")
-                .classed("active", true);
+                .classed("btn-dark", false)
+                .classed("btn-danger", true);
     
             // After 2 seconds, advance 1 trimester
             advanceMonthPlayInterval = setInterval(advanceMonth, 1500);
