@@ -254,7 +254,7 @@
         }
 
         function visAvailability(metadata) {
-            // tooltip
+            // Tooltip
             const tooltip = d3.select("#content-availability-vis")
                 .append("div")
                 .attr("class", "tooltip")
@@ -308,20 +308,7 @@
             const lineChart = svg.append("path")
                 .attr("fill", "none")
                 .attr("stroke", "steelblue")
-                .attr("stroke-width", 1.5)
-                .on("mouseover", function (event, d) {
-                    tooltip.transition()
-                        .duration(200)
-                        .style("opacity", .9);
-                    tooltip.html(d.date + "<br>Incoming Trips: " + d.bikes_available_avg)
-                        .style("left", (event.pageX) + "px")
-                        .style("top", (event.pageY - 28) + "px");
-                })
-                .on("mouseout", function (d) {
-                    tooltip.transition()
-                        .duration(500)
-                        .style("opacity", 0);
-                });
+                .attr("stroke-width", 1.5);
 
             const lineChartMax = svg.append("line")
                 .attr("stroke", "red")
@@ -445,9 +432,45 @@
                     .attr("y1", yScale(maxBikes))
                     .attr("x2", width)
                     .attr("y2", yScale(maxBikes));
+                
+                // Add hoverable points to the line chart
+                svg.selectAll("circle")
+                    .data(data)
+                    .join("circle")
+                    .attr("fill", "steelblue")
+                    .attr("opacity", 0.5)
+                    .attr("pointer-events", "fill")
+                    .attr("r", 3)
+                    .transition()
+                    .duration(1000)
+                    .attr("cx", d => xScale(d.date))
+                    .attr("cy", d => yScale(d.bikes_available_avg))
+                    .selection()
+                    .on("mouseover", function (event, d) {
+                        d3.select(this)
+                            .transition()
+                            .attr("opacity", 1)
+                            .attr("r", 7);
+                        
+                        tooltip.transition()
+                            .duration(200)
+                            .style("opacity", .9);
+                        tooltip.html("<b>" + d.date.toLocaleDateString("pt-PT") + "</b><br>Bikes Available: " + d.bikes_available_avg.toFixed(2))
+                            .style("left", (event.pageX + 28) + "px")
+                            .style("top", (event.pageY - 28) + "px");
+                    })
+                    .on("mouseout", function (event, d) {
+                        d3.select(this)
+                            .transition()
+                            .attr("opacity", 0.5)
+                            .attr("r", 3);
+
+                        tooltip.transition()
+                            .duration(500)
+                            .style("opacity", 0);
+                    });
             };
         }
-
 
         function visTrafficSpecific(metadata) {
             // All hidden by default, unless a selection has been done

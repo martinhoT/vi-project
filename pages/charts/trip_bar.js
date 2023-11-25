@@ -247,7 +247,7 @@ function tripBarUpdate(bar_data, chart_attributes, sort_type, sort_ascending, st
             tooltip.transition()
                 .duration(200)
                 .style("opacity", .9);
-            tooltip.html(d.label + "<br>Outgoing Trips: " + d.value_out)
+            tooltip.html("<b>" + d.label + "</b><br>Outgoing Trips: " + d.value_out)
                 .style("left", (event.pageX) + "px")
                 .style("top", (event.pageY - 28) + "px");
         })
@@ -279,7 +279,7 @@ function tripBarUpdate(bar_data, chart_attributes, sort_type, sort_ascending, st
             tooltip.transition()
                 .duration(200)
                 .style("opacity", .9);
-            tooltip.html(d.label + "<br>Incoming Trips: " + d.value_in)
+            tooltip.html("<b>" + d.label + "</b><br>Incoming Trips: " + d.value_in)
                 .style("left", (event.pageX) + "px")
                 .style("top", (event.pageY - 28) + "px");
         })
