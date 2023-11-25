@@ -30,11 +30,34 @@ function geoMapSetup(element, width, height, bay_area_geo, city_geos, zoom_callb
         map
             .append("path")
             .classed("geo-map-city", true)
+            .property("city-selected", false)
             .datum(city_geo)
             .attr("d", (d) => path(d.geo))
             .attr("fill", city_color(city_geo.city))
             .attr("stroke", d3.color(city_color(city_geo.city)).darker(1))
-            .attr("stroke-width", 1);
+            .attr("stroke-width", 2)
+            .on("mouseenter.city", function() {
+                d3.select(this)
+                    .classed("geo-map-city-selected", true);
+                }
+            )
+            .on("click.city", function() {
+                d3.selectAll("path.geo-map-city")
+                    .property("city-selected", false)
+                    .classed("geo-map-city-selected", false);
+
+                d3.select(this)
+                    .property("city-selected", true)
+                    .classed("geo-map-city-selected", true);
+            })
+            .on("mouseleave.city", function() {
+                if (d3.select(this).property("city-selected")) {
+                    return;
+                }
+
+                d3.select(this)
+                    .classed("geo-map-city-selected", false);
+            })
     }
 
     // Setup zoom and pan
@@ -46,7 +69,7 @@ function geoMapSetup(element, width, height, bay_area_geo, city_geos, zoom_callb
         const {transform} = event;
         map.attr("transform", `translate(${transform.x}, ${transform.y}) scale(${transform.k})`);
         map.selectAll("path.geo-map").attr("stroke-width", 1 / transform.k);
-        map.selectAll("path.geo-map-city").attr("stroke-width", 1 / transform.k);
+        map.selectAll("path.geo-map-city").attr("stroke-width", 2 / transform.k);
 
         zoom_callback(transform);
     }
