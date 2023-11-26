@@ -89,19 +89,23 @@ for (const [key, value] of currentURL.searchParams) {
     let parsedValue = null;
 
     // Number
-    if (["cityTraversal", "clientType"].includes(key))
+    if (["cityTraversal", "clientType"].includes(key)) {
         parsedValue = +value;
+    }
 
     // Date
-    else if (["timeStart", "timeEnd"].includes(key))
+    else if (["timeStart", "timeEnd"].includes(key)) {
         parsedValue = new Date(+value);
+    }
 
     // City/Station selection
-    else if (["selectedCity", "selectedStation"].includes(key))
+    else if (["selectedCity", "selectedStation"].includes(key)) {
         parsedValue = value;
+    }
 
-    if (parsedValue != null)
+    if (parsedValue != null) {
         filter[key] = parsedValue
+    }
 }
 
 $.get("bases/filters.html", function (data) {
@@ -204,8 +208,9 @@ function addTimeSlider(initialLeft, initialRight, domain) {
     function brushed(event) {
         // Alternative: let selection = event.selection
         let selection = d3.brushSelection(this)
-        if (selection == null)
-            return
+        if (selection == null) {
+            return   
+        }
 
         let range = selection.map(x.invert)
 
@@ -222,13 +227,15 @@ function addTimeSlider(initialLeft, initialRight, domain) {
 
     function brushEnded() {
         let selection = d3.brushSelection(this);
-        if (selection == null)
+        if (selection == null) {
             return;
+        }
 
         let range = selection.map(x.invert);
 
-        if (filter.timeStart.getTime() == range[0] && filter.timeEnd.getTime() == range[1])
+        if (filter.timeStart.getTime() == range[0] && filter.timeEnd.getTime() == range[1]) {
             return;
+        }
 
         filter.timeStart = new Date(range[0]);
         filter.timeEnd = new Date(range[1]);
@@ -243,8 +250,9 @@ function addTimeSlider(initialLeft, initialRight, domain) {
 
     function advanceMonth() {
         let selection = d3.brushSelection(brushGroup.node());
-        if (selection == null)
+        if (selection == null) {
             return;
+        }
 
         let range = selection.map(x.invert);
 
@@ -310,10 +318,12 @@ function setupFilters(metadata,
     const dateParser = d3.utcParse("%Y-%-m-%-d");
     let dateExtent = [dateParser(metadata["date_min"]), dateParser(metadata["date_max"])];
 
-    if (filter.timeStart == null)
+    if (filter.timeStart == null) {
         filter.timeStart = dateExtent[0];
-    if (filter.timeEnd == null)
+    }
+    if (filter.timeEnd == null) {
         filter.timeEnd = dateExtent[1];
+    }
 
     // Highlight graphs that are affected by the filter
     function highlight_start(elements) {

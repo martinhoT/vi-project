@@ -86,8 +86,9 @@
 
         d3.select("#map-selector-opener").on("click", function (event) {
             const map_selector = d3.select("#map-selector");
-            if (map_selector.style("display") === "block")
+            if (map_selector.style("display") === "block") {
                 map_selector.style("display", "none");
+            }
             else {
                 map_selector.style("display", "block");
                 map_selector.style("top", event.y + "px");
@@ -97,8 +98,9 @@
 
         function selectCityMap(city_elem, visual_only = false) {
             let city = city_elem.__data__.city;
-            if (!visual_only && city === filter.selectedCity)
+            if (!visual_only && city === filter.selectedCity) {
                 return;
+            }
 
             content_traffic_title_suffix.text("cities");
             d3.selectAll("path.geo-map-city")
@@ -117,8 +119,9 @@
 
         function selectStationMap(station_elem, visual_only = false) {
             let station_id = station_elem.__data__.station;
-            if (!visual_only && station_id === filter.selectedStation)
+            if (!visual_only && station_id === filter.selectedStation) {
                 return;
+            }
 
             content_traffic_title_suffix.text("stations");
             d3.selectAll("path.geo-map-city")
@@ -394,20 +397,24 @@
                 .text("Capacity");
 
             return (data) => {
-                if (filter.selectedCity === undefined && filter.selectedStation === undefined)
+                if (filter.selectedCity === undefined && filter.selectedStation === undefined) {
                     return;
+                }
 
                 // If we selected a city, then we need to average the availability on all of the city's stations
-                if (filter.selectedCity !== undefined)
+                if (filter.selectedCity !== undefined) {
                     data = Array.from(d3.rollup(data, g => d3.mean(g.map((v) => v.bikes_available_avg)), d => d.date).entries())
                         .map((d) => { return { date: d[0], bikes_available_avg: d[1] }; });
+                }
 
                 // Determine the capacity line. If a city was selected, then we just outline the maximum availability found in the data
                 let maxBikes = undefined;
-                if (filter.selectedCity !== undefined)
+                if (filter.selectedCity !== undefined) {
                     maxBikes = d3.max(data, d => d.bikes_available_avg);
-                else if (filter.selectedStation !== undefined)
+                }
+                else if (filter.selectedStation !== undefined) {
                     maxBikes = metadata.stations[filter.selectedStation].dock_count;
+                }
 
                 // Update the scales
                 xScale.domain(d3.extent(data, d => d.date));
@@ -529,10 +536,12 @@
                 const sort_ascending = d3.select("#content-traffic-sort-asc").property("checked");
                 const stacked = d3.select("#content-traffic-stacked").property("checked");
 
-                if (filter.selectedCity !== undefined)
+                if (filter.selectedCity !== undefined) {
                     tripBarUpdate(city_data, city_chart_attributes, sort_type, sort_ascending, false);
-                else if (filter.selectedStation !== undefined)
+                }
+                else if (filter.selectedStation !== undefined) {
                     tripBarUpdate(station_data, station_chart_attributes, sort_type, sort_ascending, stacked);
+                }
             });
 
             // Forcefully disable the stacked checkbox for the city graph
@@ -584,8 +593,9 @@
                         selectCityMap(geo_city);
                     })
                     .on("mouseout", function (event, d) {
-                        if (d !== city_chart_attributes.truncateLabel(filter.selectedCity))
+                        if (d !== city_chart_attributes.truncateLabel(filter.selectedCity)) {
                             d3.select(this).style("color", "black");
+                        }
                     });
 
                 d3.select("#content-traffic-stacked").property("disabled", true);
@@ -631,8 +641,9 @@
                         selectStationMap(geo_station);
                     })
                     .on("mouseout", function (event, d) {
-                        if (d !== station_chart_attributes.truncateLabel(metadata.stations[filter.selectedStation].name))
+                        if (d !== station_chart_attributes.truncateLabel(metadata.stations[filter.selectedStation].name)) {
                             d3.select(this).style("color", "black");
+                        }
                     });
 
                 d3.select("#content-traffic-stacked").property("disabled", false);

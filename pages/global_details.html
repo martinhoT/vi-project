@@ -105,7 +105,7 @@
             const stations_labels = stations_id_name_pairs.map((p) => p[1]);
             const cities_labels = [...new Set(stations_id_name_pairs.map((p) => metadata.stations[p[0]].city))];
 
-            const city_chart_attributes = tripBarSetup(city_graph.node(), {
+            const cityChartAttributes = tripBarSetup(city_graph.node(), {
                 width: 1000,
                 height: 400,
                 margin: { top: 10, right: 30, bottom: 200, left: 50 },
@@ -125,18 +125,18 @@
             });
 
             // Cache the data for the graphs so that they can be used in the callbacks without data updates
-            let city_data = undefined;
-            let station_data = undefined;
+            let cityData = undefined;
+            let stationData = undefined;
 
             d3.select("#content-traffic-sort").on("input", function () {
                 const stacked = d3.select("#content-traffic-stacked").property("checked");
-                city_chart_attributes.sortContent(this.value, d3.select("#content-traffic-sort-asc").property("checked"), stacked);
+                cityChartAttributes.sortContent(this.value, d3.select("#content-traffic-sort-asc").property("checked"), stacked);
                 station_chart_attributes.sortContent(this.value, d3.select("#content-traffic-sort-asc").property("checked"), stacked);
             });
 
             d3.select("#content-traffic-sort-asc").on("input", function () {
                 const stacked = d3.select("#content-traffic-stacked").property("checked");
-                city_chart_attributes.sortContent(d3.select("#content-traffic-sort").node().value, this.checked, stacked);
+                cityChartAttributes.sortContent(d3.select("#content-traffic-sort").node().value, this.checked, stacked);
                 station_chart_attributes.sortContent(d3.select("#content-traffic-sort").node().value, this.checked, stacked);
             });
 
@@ -145,8 +145,8 @@
                 const sort_ascending = d3.select("#content-traffic-sort-asc").property("checked");
                 const stacked = d3.select("#content-traffic-stacked").property("checked");
 
-                tripBarUpdate(city_data, city_chart_attributes, sort_type, sort_ascending, false);
-                tripBarUpdate(station_data, station_chart_attributes, sort_type, sort_ascending, stacked);
+                tripBarUpdate(cityData, cityChartAttributes, sort_type, sort_ascending, false);
+                tripBarUpdate(stationData, station_chart_attributes, sort_type, sort_ascending, stacked);
             })
 
             // Input options callbacks
@@ -183,7 +183,7 @@
                     end_station_counts[d.end_station_id] = (end_station_counts[d.end_station_id] || 0) + d.total_trips;
                 });
 
-                const station_counts_data = stations_id_name_pairs.map(function (p) {
+                const stationCountsData = stations_id_name_pairs.map(function (p) {
                     return { label: p[1], value_out: start_station_counts[p[0]] || 0, value_in: end_station_counts[p[0]] || 0 };
                 });
 
@@ -201,19 +201,19 @@
                     end_city_counts[end_city] = (end_city_counts[end_city] || 0) + d.total_trips;
                 });
 
-                const city_counts_data = cities_labels.map(function (city) {
+                const cityCountsData = cities_labels.map(function (city) {
                     return { label: city, value_out: start_city_counts[city] || 0, value_in: end_city_counts[city] || 0 };
                 });
 
-                city_data = city_counts_data;
-                station_data = station_counts_data;
+                cityData = cityCountsData;
+                stationData = stationCountsData;
 
-                const sort_type = d3.select("#content-traffic-sort").node().value;
+                const sortType = d3.select("#content-traffic-sort").node().value;
                 const sort_ascending = d3.select("#content-traffic-sort-asc").property("checked");
                 const stacked = d3.select("#content-traffic-stacked").property("checked");
 
-                tripBarUpdate(city_data, city_chart_attributes, sort_type, sort_ascending, stacked);
-                tripBarUpdate(station_data, station_chart_attributes, sort_type, sort_ascending, stacked);
+                tripBarUpdate(cityData, cityChartAttributes, sortType, sort_ascending, stacked);
+                tripBarUpdate(stationData, station_chart_attributes, sortType, sort_ascending, stacked);
             };
         }
 
