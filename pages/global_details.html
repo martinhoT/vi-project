@@ -75,7 +75,7 @@
         </div>
 
         <div id="content-client-length-trips">
-            <h2 class="chart-title">Average length of trips made by each client type</h2>
+            <h2 class="chart-title">Average duration of trips made by each client type</h2>
 
             <div id="content-client-length-trips-vis"></div>
         </div>
@@ -393,7 +393,7 @@
         }
 
         function visClientTotalTrips(metadata) {
-            const chart_attributes = clientBarSetup("#content-client-total-trips-vis", 500, 300, 20, 20, 70, 70);
+            const chart_attributes = clientBarSetup("#content-client-total-trips-vis", 500, 300, 20, 20, 70, 70, "Total number of trips ");
 
             return (data) => {
                 // Extract the subscription_type column
@@ -412,7 +412,7 @@
         }
 
         function visClientLengthTrips(metadata) {
-            const chart_attributes = clientBarSetup("#content-client-length-trips-vis", 500, 300, 20, 20, 70, 70);
+            const chart_attributes = clientBarSetup("#content-client-length-trips-vis", 500, 300, 20, 20, 70, 70, "Average trip duration (seconds)");
 
             return (data) => {
                 // Group data by subscription type and sum the duration for each group

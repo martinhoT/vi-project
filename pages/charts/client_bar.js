@@ -1,4 +1,4 @@
-function clientBarSetup(element, width, height, top, right, bottom, left) {
+function clientBarSetup(element, width, height, top, right, bottom, left, yLabel) {
     // Set up SVG dimensions
     const margin = { top: top, right: right, bottom: bottom, left: left };
     const w = width - margin.left - margin.right;
@@ -29,12 +29,12 @@ function clientBarSetup(element, width, height, top, right, bottom, left) {
     // Add Y-axis title
     svg.select("text.title-y")
         .attr("transform", "rotate(-90)")
-        .attr("y", -margin.left + 10)
+        .attr("y", -margin.left)
         .attr("x", -h / 2)
         .attr("dy", "1em")
         .style("text-anchor", "middle")
         .style("font-size", "14px")
-        .text("Count");
+        .text(yLabel);
 
     return {
         svg: svg,
