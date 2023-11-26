@@ -9,7 +9,7 @@
 <body>
     <div id="nav"></div>
 
-    <div id="content" class="vis-grid">
+    <div id="content" class="vis-grid padded">
         <div id="content-traffic">
             <h2 class="chart-title">
                 Global bike traffic for each
@@ -51,7 +51,7 @@
             <div>
                 <h2 class="chart-title">Bike usage</h2>
 
-                Number of bins:
+                Number of bars to display:
                 <input id="content-bike-usage-bins" name="content-bike-usage-bins" type="number" value="20" min="1" />
             </div>
 
@@ -87,8 +87,6 @@
     <script src="charts/trip_bar.js"></script>
     <script>
 
-        // TODO: client type chart legend makes no sense when it could be applied to X axis
-
         let data_update_callbacks = [];
         d3.select("#content").on("data-update", () => {
             data_update_callbacks.forEach((callback) => callback());
@@ -105,7 +103,7 @@
             const cities_labels = [...new Set(stations_id_name_pairs.map((p) => metadata.stations[p[0]].city))];
             
             const city_chart_attributes = tripBarSetup(city_graph.node(), {
-                width: 600,
+                width: 1000,
                 height: 400,
                 margin: { top: 10, right: 30, bottom: 200, left: 50 },
                 labels: cities_labels,
@@ -114,7 +112,7 @@
                 x_label: "Cities",
             });
             const station_chart_attributes = tripBarSetup(station_graph.node(), {
-                width: 600,
+                width: 1000,
                 height: 400,
                 margin: { top: 10, right: 30, bottom: 200, left: 50 },
                 labels: stations_labels,
@@ -218,7 +216,7 @@
 
         function visBikeUsage(metadata) {
             // set the dimensions and margins of the graph
-            const margin = { top: 10, right: 30, bottom: 30, left: 80 },
+            const margin = { top: 10, right: 30, bottom: 60, left: 60 },
                 width = 900 - margin.left - margin.right,
                 height = 400 - margin.top - margin.bottom;
 
@@ -241,9 +239,25 @@
             const xAxis = svg.append("g")
                 .attr("transform", `translate(0, ${height})`);
 
+            // Add X-axis label
+            svg.append("text")
+                .attr("class", "x-axis-label")
+                .attr("transform", `translate(${width / 2}, ${height + margin.top + 30})`)
+                .style("text-anchor", "middle")
+                .text("Total Duration");
+
             // Add Y-axis
             const yAxis = svg.append("g")
                 .attr("class", "y-axis");
+
+            // Add Y-axis label
+            svg.append("text")
+                .attr("transform", "rotate(-90)")
+                .attr("y", 0 - margin.left)
+                .attr("x", 0 - height / 2)
+                .attr("dy", "1em")
+                .style("text-anchor", "middle")
+                .text("Number of Bikes");
 
             // Function to display information in a table
             function updateTable(data) {

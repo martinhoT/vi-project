@@ -12,7 +12,7 @@
 <body>
     <div id="nav"></div>
 
-    <div id="content">
+    <div id="content" class="padded">
         <div id="geo-tooltip" class="geo-tooltip" style="opacity: 0"></div>
 
         <div id="content-title">
@@ -254,7 +254,7 @@
         }
 
         function visAvailability(metadata) {
-            // tooltip
+            // Tooltip
             const tooltip = d3.select("#content-availability-vis")
                 .append("div")
                 .attr("class", "tooltip")
@@ -305,25 +305,14 @@
                 .style("text-anchor", "middle")
                 .text("Bikes Available");
 
-            const lineChart = svg.append("path")
+            const chartContent = svg.append("g");
+
+            const lineChart = chartContent.append("path")
                 .attr("fill", "none")
                 .attr("stroke", "steelblue")
-                .attr("stroke-width", 1.5)
-                .on("mouseover", function (event, d) {
-                    tooltip.transition()
-                        .duration(200)
-                        .style("opacity", .9);
-                    tooltip.html(d.date + "<br>Incoming Trips: " + d.bikes_available_avg)
-                        .style("left", (event.pageX) + "px")
-                        .style("top", (event.pageY - 28) + "px");
-                })
-                .on("mouseout", function (d) {
-                    tooltip.transition()
-                        .duration(500)
-                        .style("opacity", 0);
-                });
+                .attr("stroke-width", 1.5);
 
-            const lineChartMax = svg.append("line")
+            const lineChartMax = chartContent.append("line")
                 .attr("stroke", "red")
                 .attr("stroke-width", 1.5)
                 .attr("stroke-dasharray", "4");
@@ -405,6 +394,9 @@
                 .text("Capacity");
 
             return (data) => {
+                if (filter.selectedCity === undefined && filter.selectedStation === undefined)
+                    return;
+
                 // If we selected a city, then we need to average the availability on all of the city's stations
                 if (filter.selectedCity !== undefined)
                     data = Array.from(d3.rollup(data, g => d3.mean(g.map((v) => v.bikes_available_avg)), d => d.date).entries())
@@ -445,9 +437,45 @@
                     .attr("y1", yScale(maxBikes))
                     .attr("x2", width)
                     .attr("y2", yScale(maxBikes));
+                
+                // Add hoverable points to the line chart
+                chartContent.selectAll("circle")
+                    .data(data)
+                    .join("circle")
+                    .attr("fill", "steelblue")
+                    .attr("opacity", 0.5)
+                    .attr("pointer-events", "fill")
+                    .attr("r", 3)
+                    .transition()
+                    .duration(1000)
+                    .attr("cx", d => xScale(d.date))
+                    .attr("cy", d => yScale(d.bikes_available_avg))
+                    .selection()
+                    .on("mouseover", function (event, d) {
+                        d3.select(this)
+                            .transition()
+                            .attr("opacity", 1)
+                            .attr("r", 7);
+                        
+                        tooltip.transition()
+                            .duration(200)
+                            .style("opacity", .9);
+                        tooltip.html("<b>" + d.date.toLocaleDateString("pt-PT") + "</b><br>Bikes Available: " + d.bikes_available_avg.toFixed(2))
+                            .style("left", (event.pageX + 28) + "px")
+                            .style("top", (event.pageY - 28) + "px");
+                    })
+                    .on("mouseout", function (event, d) {
+                        d3.select(this)
+                            .transition()
+                            .attr("opacity", 0.5)
+                            .attr("r", 3);
+
+                        tooltip.transition()
+                            .duration(500)
+                            .style("opacity", 0);
+                    });
             };
         }
-
 
         function visTrafficSpecific(metadata) {
             // All hidden by default, unless a selection has been done
@@ -462,7 +490,7 @@
             const cities_labels = [...new Set(stations_id_name_pairs.map((p) => metadata.stations[p[0]].city))];
 
             const city_chart_attributes = tripBarSetup(city_graph.node(), {
-                width: 600,
+                width: 700,
                 height: 400,
                 margin: { top: 10, right: 30, bottom: 200, left: 50 },
                 labels: cities_labels,
@@ -471,7 +499,7 @@
                 x_label: "Cities",
             });
             const station_chart_attributes = tripBarSetup(station_graph.node(), {
-                width: 600,
+                width: 700,
                 height: 400,
                 margin: { top: 10, right: 30, bottom: 200, left: 50 },
                 labels: stations_labels,
