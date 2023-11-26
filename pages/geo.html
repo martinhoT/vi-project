@@ -275,6 +275,12 @@
                 const pie_data = Array.from(available_bikes.entries())
                     .map((d) => {
                         const [x, y] = projection([metadata.stations[d[0]].long, metadata.stations[d[0]].lat]);
+
+                        // Calculate percentage values
+                        const totalAvailable = d[1].bikes_available_avg + d[1].docks_available_avg;
+                        const bikesPercentage = (d[1].bikes_available_avg / totalAvailable) * 100;
+                        const docksPercentage = (d[1].docks_available_avg / totalAvailable) * 100;
+
                         // Include the station ID as the first element of the array, so that we know to which station the pie chart belongs when we click it
                         return {
                             station: d[0],
@@ -283,11 +289,13 @@
                             pie: pie([
                                 {
                                     key: "bikes_available_avg",
-                                    value: d[1].bikes_available_avg
+                                    value: d[1].bikes_available_avg,
+                                    percentage: bikesPercentage
                                 },
                                 {
                                     key: "docks_available_avg",
-                                    value: d[1].docks_available_avg
+                                    value: d[1].docks_available_avg,
+                                    percentage: docksPercentage
                                 }
                             ])
                         }
@@ -315,7 +323,23 @@
                     .on("mousemove", function (event) {
                         const station_id = this.__data__.station;
                         const station_name = metadata.stations[station_id].name;
-                        const tooltip_text = `<b>${station_name}</b> <br> Station`;
+
+                        // Accessing the pie chart data
+                        const pieData = this.__data__.pie;
+
+                        // Extracting the values and percentages
+                        const bikesValue = pieData.find(d => d.data.key === "bikes_available_avg").value;
+                        const docksValue = pieData.find(d => d.data.key === "docks_available_avg").value;
+                        const bikesPercentage = pieData.find(d => d.data.key === "bikes_available_avg").data.percentage;
+                        const docksPercentage = pieData.find(d => d.data.key === "docks_available_avg").data.percentage;
+
+
+                        
+                        const tooltip_text = `<b>${station_name}</b> <br> 
+                     Station <br> 
+                     <span style="color: #cee741;"><b>Bikes:  (${bikesPercentage.toFixed(2)}<b>%)</span><br>
+                     <span style="color: #e36124;"><b>Docks:  (${docksPercentage.toFixed(2)}<b>%)</span><br>`;
+
 
                         d3.select("#geo-tooltip")
                             .html(tooltip_text)
