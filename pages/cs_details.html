@@ -391,7 +391,7 @@
                 .attr("stroke-width", 1.5)
                 .attr("stroke-dasharray", "4");
 
-            legendMax.append("text")
+            const legendMaxText = legendMax.append("text")
                 .attr("x", 20)
                 .attr("y", 5)
                 .text("Capacity");
@@ -408,17 +408,22 @@
                 }
 
                 // Determine the capacity line. If a city was selected, then we just outline the maximum availability found in the data
+                // Additionally, change the legend to indicate that the red line above is not the capacity when a city is selected
                 let maxBikes = undefined;
                 if (filter.selectedCity !== undefined) {
                     maxBikes = d3.max(data, d => d.bikes_available_avg);
+                    legendMaxText.text("Maximum");
                 }
                 else if (filter.selectedStation !== undefined) {
                     maxBikes = metadata.stations[filter.selectedStation].dock_count;
+                    legendMaxText.text("Capacity");
                 }
+
+                let minBikes = d3.min(data, d => d.bikes_available_avg);
 
                 // Update the scales
                 xScale.domain(d3.extent(data, d => d.date));
-                yScale.domain([0, maxBikes]);
+                yScale.domain([minBikes, maxBikes]);
 
                 // Update the axes
                 xAxis
