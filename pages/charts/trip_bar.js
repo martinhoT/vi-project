@@ -35,11 +35,12 @@ function tripBarSetup(element, att) {
     // Create a scrollable div which will contain the chart and X axis
     const scrollable_div = graph.append("div")
         .style("overflow-x", "scroll")
+        .style("overflow-y", "hidden")
         .style("-webkit-overflow-scrolling", "touch")
         .style("position", "relative")
         .style("z-index", 1)
         .style("width", w + "px")
-        .style("height", (h + att.margin.bottom + att.margin.top) + "px")
+        .style("height", (h + att.margin.bottom + att.margin.top - 25) + "px")
         .style("left", graphLeft + "px")
         .style("top", (-h - att.margin.bottom - att.margin.top) + "px");
 
@@ -61,7 +62,7 @@ function tripBarSetup(element, att) {
         .classed("g-in", true);
 
     // Create X scale (necessary for the sorting methods)
-    const x_max_length = 32;
+    const x_max_length = 26;
     function truncateLabel(label) {
         return (label.length > x_max_length) ? label.slice(0, x_max_length - 3) + "..." : label;
     }
@@ -158,7 +159,7 @@ function tripBarSetup(element, att) {
     // Add X axis label
     outer_svg.append("text")
         .attr("transform", "translate(" + (w / 2) + " ," + (h + att.margin.top) + ")")
-        .attr("y", 220 - att.margin.left)
+        .attr("y", 235 - att.margin.left)
         .style("text-anchor", "middle")
         .text(att.x_label);
 
