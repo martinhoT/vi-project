@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Global details</title>
     <link rel="stylesheet" href="../css/vis3.css">
 </head>
+
 <body>
     <div id="nav"></div>
 
@@ -18,7 +20,7 @@
                     <option value="station">Station</option>
                 </select>
             </h2>
-            
+
             <p>
                 Sort by
                 <select name="content-traffic-sort" id="content-traffic-sort" autocomplete="off">
@@ -33,7 +35,8 @@
 
                 <input type="checkbox" name="content-traffic-stacked" id="content-traffic-stacked" disabled>
                 Stacked
-                <span style="cursor: help" data-toggle="tooltip" data-placement="top" title="Only makes sense for the Stations chart, the Cities one has a logarithmic scale on the Y axis">
+                <span style="cursor: help" data-toggle="tooltip" data-placement="top"
+                    title="Only makes sense for the Stations chart, the Cities one has a logarithmic scale on the Y axis">
                     ⓘ
                 </span>
             </p>
@@ -46,7 +49,7 @@
 
             <div id="content-client-total-trips-vis"></div>
         </div>
-        
+
         <div id="content-bike-usage">
             <div>
                 <h2 class="chart-title">Bike usage</h2>
@@ -56,7 +59,7 @@
             </div>
 
             <div id="content-bike-usage-vis"></div>
-            
+
             <table id="content-bike-usage-table" class="table">
                 <thead>
                     <th>Bike ID</th>
@@ -96,12 +99,12 @@
             const city_graph = d3.select("#content-traffic-vis").append("div");
             const station_graph = d3.select("#content-traffic-vis").append("div")
                 .style("display", "none");  // hidden by default
-            
+
             // NOTE: disadvantage of having the same array of stations: all stations will appear even if they have no trips for the given filters
             const stations_id_name_pairs = Object.entries(metadata.stations).map((s) => [s[0], s[1]["name"]]);
             const stations_labels = stations_id_name_pairs.map((p) => p[1]);
             const cities_labels = [...new Set(stations_id_name_pairs.map((p) => metadata.stations[p[0]].city))];
-            
+
             const city_chart_attributes = tripBarSetup(city_graph.node(), {
                 width: 1000,
                 height: 400,
@@ -125,19 +128,19 @@
             let city_data = undefined;
             let station_data = undefined;
 
-            d3.select("#content-traffic-sort").on("input", function() {
+            d3.select("#content-traffic-sort").on("input", function () {
                 const stacked = d3.select("#content-traffic-stacked").property("checked");
                 city_chart_attributes.sortContent(this.value, d3.select("#content-traffic-sort-asc").property("checked"), stacked);
                 station_chart_attributes.sortContent(this.value, d3.select("#content-traffic-sort-asc").property("checked"), stacked);
             });
 
-            d3.select("#content-traffic-sort-asc").on("input", function() {
+            d3.select("#content-traffic-sort-asc").on("input", function () {
                 const stacked = d3.select("#content-traffic-stacked").property("checked");
                 city_chart_attributes.sortContent(d3.select("#content-traffic-sort").node().value, this.checked, stacked);
                 station_chart_attributes.sortContent(d3.select("#content-traffic-sort").node().value, this.checked, stacked);
             });
 
-            d3.select("#content-traffic-stacked").on("input", function() {
+            d3.select("#content-traffic-stacked").on("input", function () {
                 const sort_type = d3.select("#content-traffic-sort").node().value;
                 const sort_ascending = d3.select("#content-traffic-sort-asc").property("checked");
                 const stacked = d3.select("#content-traffic-stacked").property("checked");
@@ -147,7 +150,7 @@
             })
 
             // Input options callbacks
-            d3.select("#content-traffic-class").on("change", function() {
+            d3.select("#content-traffic-class").on("change", function () {
                 let traffic_type = this.value;
                 switch (traffic_type) {
                     case "city":
@@ -155,7 +158,7 @@
                         city_graph.style("display", "block");
                         d3.select("#content-traffic-stacked").property("disabled", true)
                         break;
-                
+
                     case "station":
                         city_graph.style("display", "none");
                         station_graph.style("display", "block");
@@ -175,12 +178,12 @@
                 // Create data for the station graph
                 const start_station_counts = {};
                 const end_station_counts = {};
-                data.forEach(function(d) {
+                data.forEach(function (d) {
                     start_station_counts[d.start_station_id] = (start_station_counts[d.start_station_id] || 0) + d.total_trips;
                     end_station_counts[d.end_station_id] = (end_station_counts[d.end_station_id] || 0) + d.total_trips;
                 });
 
-                const station_counts_data = stations_id_name_pairs.map(function(p) {
+                const station_counts_data = stations_id_name_pairs.map(function (p) {
                     return { label: p[1], value_out: start_station_counts[p[0]] || 0, value_in: end_station_counts[p[0]] || 0 };
                 });
 
@@ -198,7 +201,7 @@
                     end_city_counts[end_city] = (end_city_counts[end_city] || 0) + d.total_trips;
                 });
 
-                const city_counts_data = cities_labels.map(function(city) {
+                const city_counts_data = cities_labels.map(function (city) {
                     return { label: city, value_out: start_city_counts[city] || 0, value_in: end_city_counts[city] || 0 };
                 });
 
@@ -286,7 +289,7 @@
 
                 // Sort the data by total_duration
                 processedData.sort((a, b) => d3.ascending(a.total_duration, b.total_duration));
-                
+
                 xScale.domain([d3.min(processedData, d => d.total_duration), d3.max(processedData, d => d.total_duration)])
                 xAxis
                     .transition()
@@ -321,11 +324,11 @@
                         .style("fill", "#69b3a2")
                         .transition()
                         .duration(1000)
-                            .attr("x", d => xScale(d.x0))
-                            .attr("y", d => yScale(d.length)) // Use d.length to get the count of bikes in each bin
-                            .attr("width", d => xScale(d.x1) - xScale(d.x0))
-                            .attr("height", d => height - yScale(d.length)); // Adjust the height based on the count
-                    
+                        .attr("x", d => xScale(d.x0))
+                        .attr("y", d => yScale(d.length)) // Use d.length to get the count of bikes in each bin
+                        .attr("width", d => xScale(d.x1) - xScale(d.x0))
+                        .attr("height", d => height - yScale(d.length)); // Adjust the height based on the count
+
                     // Create bars that are used solely for selection
                     svg.selectAll("rect.selector-rect")
                         .data(bins.filter(d => d.length > 0))
@@ -345,7 +348,7 @@
                                 .style("opacity", "0")
                                 .style("stroke-width", "0px")
                                 .property("selected", false);
-                            
+
                             d3.select(this)
                                 .style("opacity", "1")
                                 .style("stroke-width", "3px")
@@ -379,7 +382,7 @@
                 }
 
                 // Event listener for the number input
-                nBinsSelector.on("change", function(event) {
+                nBinsSelector.on("change", function (event) {
                     const numBins = this.value;
                     updateHistogram(numBins);
                 });
@@ -394,13 +397,13 @@
 
             return (data) => {
                 // Extract the subscription_type column
-                let subscriptionTypes = data.map(function(d) {
+                let subscriptionTypes = data.map(function (d) {
                     return d.subscription_type;
                 });
 
                 // Count occurrences of each label
                 let labelCounts = {};
-                subscriptionTypes.forEach(function(label) {
+                subscriptionTypes.forEach(function (label) {
                     labelCounts[label] = (labelCounts[label] || 0) + 1;
                 });
 
@@ -527,14 +530,15 @@
 
                 trip_small_data
                     .then((data) => drawTripData(metadata, data, trip_data_draw_callbacks))
-                    .catch(function(err){console.log(err)});
+                    .catch(function (err) { console.log(err) });
 
                 bikes_usage_data
                     .then((data) => drawBikeUsageData(metadata, data, bikes_usage_draw_callbacks))
-                    .catch(function(err){console.log(err)});
+                    .catch(function (err) { console.log(err) });
             })
-            .catch(function(err){console.log(err)});            
+            .catch(function (err) { console.log(err) });
 
     </script>
 </body>
+
 </html>

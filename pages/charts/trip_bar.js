@@ -34,20 +34,20 @@ function tripBarSetup(element, att) {
 
     // Create a scrollable div which will contain the chart and X axis
     const scrollable_div = graph.append("div")
-            .style("overflow-x", "scroll")
-            .style("-webkit-overflow-scrolling", "touch")
-            .style("position", "relative")
-            .style("z-index", 1)
-            .style("width", w + "px")
-            .style("height", (h + att.margin.bottom + att.margin.top) + "px")
-            .style("left", graphLeft + "px")
-            .style("top", (-h - att.margin.bottom - att.margin.top) + "px");
+        .style("overflow-x", "scroll")
+        .style("-webkit-overflow-scrolling", "touch")
+        .style("position", "relative")
+        .style("z-index", 1)
+        .style("width", w + "px")
+        .style("height", (h + att.margin.bottom + att.margin.top) + "px")
+        .style("left", graphLeft + "px")
+        .style("top", (-h - att.margin.bottom - att.margin.top) + "px");
 
     const scrollable_div_svg = scrollable_div.append("svg")
-            .classed("scrollable-svg", true)
-            .attr("width", totalWidth)
-            .attr("height", h + att.margin.bottom + att.margin.top)
-            .style("display", "block");
+        .classed("scrollable-svg", true)
+        .attr("width", totalWidth)
+        .attr("height", h + att.margin.bottom + att.margin.top)
+        .style("display", "block");
 
     scrollable_div_svg.append("g")
         .classed("x-axis", true)
@@ -77,11 +77,11 @@ function tripBarSetup(element, att) {
             case "alphabetic":
                 sort_function = (a, b) => sort_ascending ? d3.ascending(a.label, b.label) : d3.descending(a.label, b.label)
                 break;
-            
+
             case "total_trips":
                 sort_function = (a, b) => sort_ascending ? d3.ascending(a.value_in + a.value_out, b.value_in + b.value_out) : d3.descending(a.value_in + a.value_out, b.value_in + b.value_out);
                 break;
-            
+
             case "incoming_trips":
                 sort_function = (a, b) => sort_ascending ? d3.ascending(a.value_in, b.value_in) : d3.descending(a.value_in, b.value_in);
                 break;
@@ -89,7 +89,7 @@ function tripBarSetup(element, att) {
             case "outgoing_trips":
                 sort_function = (a, b) => sort_ascending ? d3.ascending(a.value_out, b.value_out) : d3.descending(a.value_out, b.value_out);
                 break;
-            
+
             default:
                 console.log("ERROR: invalid sort type for traffic visualization");
                 return;
@@ -99,7 +99,7 @@ function tripBarSetup(element, att) {
             .selectAll("g.g-in")
             .selectAll("rect")
             .sort(sort_function);
-        
+
         sorted_out = scrollable_div_svg
             .selectAll("g.g-out")
             .selectAll("rect")
@@ -124,13 +124,13 @@ function tripBarSetup(element, att) {
 
     // Color palette
     const color = d3.scaleOrdinal()
-            .domain(["start", "end"])
-            .range(['#e41a1c', '#377eb8']);
+        .domain(["start", "end"])
+        .range(['#e41a1c', '#377eb8']);
 
     // Add Legend
     const legend_group = outer_svg.append("g")
         .attr("transform", "translate(" + (w + att.margin.left + att.margin.right) + "," + 20 + ")");
-    
+
     legend_group.append("rect")
         .attr("fill", "white")
         .attr("width", 120)
@@ -138,10 +138,10 @@ function tripBarSetup(element, att) {
         .attr("z-index", 25);
 
     const legend = legend_group
-            .selectAll("g")
-            .data(color.domain().slice().reverse())
-            .enter().append("g")
-            .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
+        .selectAll("g")
+        .data(color.domain().slice().reverse())
+        .enter().append("g")
+        .attr("transform", function (d, i) { return "translate(0," + i * 20 + ")"; });
 
     legend.append("rect")
         .attr("width", 18)
@@ -153,7 +153,7 @@ function tripBarSetup(element, att) {
         .attr("y", 9)
         .attr("dy", ".35em")
         .style("text-anchor", "start")
-        .text(function(d) { return d === "start" ? "Outgoing" : "Incoming"; });
+        .text(function (d) { return d === "start" ? "Outgoing" : "Incoming"; });
 
     // Add X axis label
     outer_svg.append("text")
@@ -183,7 +183,7 @@ function tripBarSetup(element, att) {
         x: x,
         logarithmic: att.logarithmic,
         tooltip: tooltip,
-        
+
         sortContent: sortContent,
         truncateLabel: truncateLabel,
     }
@@ -203,8 +203,8 @@ function tripBarUpdate(bar_data, chart_attributes, sort_type, sort_ascending, st
     const truncateLabel = chart_attributes.truncateLabel;
 
     const max_count = (stacked)
-        ? d3.max(bar_data, function(d) { return d.value_in + d.value_out; })
-        : d3.max(bar_data, function(d) { return Math.max(d.value_in, d.value_out); });
+        ? d3.max(bar_data, function (d) { return d.value_in + d.value_out; })
+        : d3.max(bar_data, function (d) { return Math.max(d.value_in, d.value_out); });
 
     const scrollable_div_svg = graph.select("svg.scrollable-svg");
     const outer_svg = graph.select("svg.outer-svg");
@@ -213,8 +213,8 @@ function tripBarUpdate(bar_data, chart_attributes, sort_type, sort_ascending, st
     scrollable_div_svg.select("g.x-axis")
         .call(d3.axisBottom(x).tickSize(0))
         .selectAll("text")
-            .attr("transform", "translate(-15,10), rotate(-90)")
-            .style("text-anchor", "end");
+        .attr("transform", "translate(-15,10), rotate(-90)")
+        .style("text-anchor", "end");
 
     // Update Y axis
     const y = (logarithmic)

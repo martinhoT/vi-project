@@ -6,7 +6,7 @@ function geoMapSetup(element, width, height, bay_area_geo, city_geos, zoom_callb
         .attr("width", width)
         .attr("height", height);
 
-    const {width: bWidth, height: bHeight} = svg.node().getBoundingClientRect();
+    const { width: bWidth, height: bHeight } = svg.node().getBoundingClientRect();
 
     const projection = d3.geoMercator()
         .fitSize([bWidth, bHeight], bay_area_geo);
@@ -16,7 +16,7 @@ function geoMapSetup(element, width, height, bay_area_geo, city_geos, zoom_callb
 
     const map = svg.append("g")
         .classed("geo", true);
-    
+
     map
         .append("path")
         .classed("geo-map", true)
@@ -36,12 +36,12 @@ function geoMapSetup(element, width, height, bay_area_geo, city_geos, zoom_callb
             .attr("fill", city_color(city_geo.city))
             .attr("stroke", d3.color(city_color(city_geo.city)).darker(1))
             .attr("stroke-width", 2)
-            .on("mouseenter.city", function() {
+            .on("mouseenter.city", function () {
                 d3.select(this)
                     .classed("geo-map-city-selected", true);
-                }
+            }
             )
-            .on("click.city", function() {
+            .on("click.city", function () {
                 d3.selectAll("path.geo-map-city")
                     .property("city-selected", false)
                     .classed("geo-map-city-selected", false);
@@ -50,7 +50,7 @@ function geoMapSetup(element, width, height, bay_area_geo, city_geos, zoom_callb
                     .property("city-selected", true)
                     .classed("geo-map-city-selected", true);
             })
-            .on("mouseleave.city", function() {
+            .on("mouseleave.city", function () {
                 if (d3.select(this).property("city-selected")) {
                     return;
                 }
@@ -64,9 +64,9 @@ function geoMapSetup(element, width, height, bay_area_geo, city_geos, zoom_callb
     const zoom = d3.zoom()
         .scaleExtent([1, 128])
         .on("zoom", zoomed);
-    
+
     function zoomed(event) {
-        const {transform} = event;
+        const { transform } = event;
         map.attr("transform", `translate(${transform.x}, ${transform.y}) scale(${transform.k})`);
         map.selectAll("path.geo-map").attr("stroke-width", 1 / transform.k);
         map.selectAll("path.geo-map-city").attr("stroke-width", 2 / transform.k);

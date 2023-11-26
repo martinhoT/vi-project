@@ -10,11 +10,11 @@ const filter = {
     selectedCity: undefined,
     selectedStation: undefined,
 
-    selectStation: function(station) {
+    selectStation: function (station) {
         this.selectedStation = station;
         this.selectedCity = undefined;
     },
-    selectCity: function(city) {
+    selectCity: function (city) {
         this.selectedCity = city;
         this.selectedStation = undefined;
     }
@@ -24,10 +24,10 @@ const filter = {
 const currentURL = new URL(window.location);
 
 // Initialize the navigation bar
-$.get("bases/nav.html", function(data) {
+$.get("bases/nav.html", function (data) {
     $("#nav").replaceWith(data);
-    
-    $("#nav").ready(function() {
+
+    $("#nav").ready(function () {
         function goTo(loc) {
             if (filter.timeStart !== undefined)
                 currentURL.searchParams.set("timeStart", filter.timeStart.getTime());
@@ -61,23 +61,23 @@ $.get("bases/nav.html", function(data) {
                 element.addClass("active");
                 currentLoc = loc;
             }
-            
+
             else {
-                element.on("click", function() {
+                element.on("click", function () {
                     goTo(loc);
                 });
             }
 
             d3.select("#nav")
                 .select("#nav-refresh-filters")
-                .on("click", function() {
+                .on("click", function () {
                     filter.cityTraversal = 1;
                     filter.clientType = 1;
                     filter.timeStart = undefined;
                     filter.timeEnd = undefined;
                     filter.selectedCity = undefined;
                     filter.selectedStation = undefined;
-                    
+
                     // Refresh the current page
                     goTo(currentLoc);
                 });
@@ -104,16 +104,16 @@ for (const [key, value] of currentURL.searchParams) {
         filter[key] = parsedValue
 }
 
-$.get("bases/filters.html", function(data) {
+$.get("bases/filters.html", function (data) {
     $("#filters").replaceWith(data);
 
     // Initialize the slider-3-toggle filters since they don't depend on the data
-    $("#filters").ready(function() {
+    $("#filters").ready(function () {
         $("#filters").show();
 
         for (let filter of ["#filter-city-traversal", "#filter-client-type"]) {
             for (let i = 0; i < 3; i++) {
-                d3.select(filter).select(".slider-3-toggle-clickable-area-" + i).on("click", function() {
+                d3.select(filter).select(".slider-3-toggle-clickable-area-" + i).on("click", function () {
                     changeSlider3ToggleState(filter, i);
                 });
             }
@@ -121,7 +121,7 @@ $.get("bases/filters.html", function(data) {
     });
 });
 
-const changeSlider3ToggleState = function(filterId, state) {
+const changeSlider3ToggleState = function (filterId, state) {
     let left_position = 5 + 35 * state;
     d3.select(filterId).select(".slider-3-toggle-circle")
         .transition()
@@ -142,7 +142,7 @@ const changeSlider3ToggleState = function(filterId, state) {
             .duration(1000)
             .ease(d3.easeExp)
             .style("color", colors[i])
-    
+
     let filterElem = d3.select(filterId);
     let changed = filterElem.property("value") != state;
     filterElem.property("value", state);
@@ -179,28 +179,28 @@ function addTimeSlider(initialLeft, initialRight, domain) {
     timeSlider.selectAll('text')
         .data([[0, 15], [timeSliderWidth + timeSliderLabelWidth, 15]])
         .join('text')
-            .text('?')
-            .attr('x', (d) => d[0] + 4) // add some padding
-            .attr('y', (d) => d[1])
-            .attr('text-align', (d, i) => i == 0 ? 'end' : 'start')
-            
+        .text('?')
+        .attr('x', (d) => d[0] + 4) // add some padding
+        .attr('y', (d) => d[1])
+        .attr('text-align', (d, i) => i == 0 ? 'end' : 'start')
+
     var brush = d3.brushX()
         .extent([[0, 0], [timeSliderWidth, timeSliderHeight]])
         .on('brush', brushed)
         .on('end', brushEnded)
-            
+
     var brushGroup = timeFilterSvg.append('g')
         .attr('class', 'brush')
         .attr('transform', 'translate(' + timeSliderLabelWidth + ',' + 0 + ')')
         .call(brush)
-    
+
     brushGroup.select('.overlay')
         .attr('stroke', 'black')
         .attr('stroke-width', 1)
-    
+
     brushGroup.selectAll('.handle')
         .attr('fill', 'gray')
-    
+
     function brushed(event) {
         // Alternative: let selection = event.selection
         let selection = d3.brushSelection(this)
@@ -208,14 +208,14 @@ function addTimeSlider(initialLeft, initialRight, domain) {
             return
 
         let range = selection.map(x.invert)
-        
+
         timeSlider.selectAll("text")
-            .text(function(d, i) {
+            .text(function (d, i) {
                 let date = new Date(range[i]);
                 let formatDaysMonths = (date) => (((date < 10) ? "0" : "") + date)  // add a leading zero to keep the same spacing
                 return `${formatDaysMonths(date.getUTCDate())}/${formatDaysMonths(date.getUTCMonth() + 1)}/${date.getUTCFullYear()}`
             })
-        
+
         // NOTE: comment if update every brush action is too heavy, and use brushEnded instead
         // callback(range[0], range[1])
     }
@@ -255,10 +255,10 @@ function addTimeSlider(initialLeft, initialRight, domain) {
                 .property("value", "stopped")
                 .classed("btn-danger", false)
                 .classed("btn-dark", true);
-            
+
             clearInterval(advanceMonthPlayInterval);
             advanceMonthPlayInterval = undefined;
-    
+
             return;
         }
 
@@ -274,7 +274,7 @@ function addTimeSlider(initialLeft, initialRight, domain) {
         brush.move(brushGroup, range.map(x));
     }
 
-    d3.select("#filter-time-play").on("click", function() {
+    d3.select("#filter-time-play").on("click", function () {
         const current_state = d3.select(this).property("value");
         if (current_state == "playing") {
             d3.select(this)
@@ -289,7 +289,7 @@ function addTimeSlider(initialLeft, initialRight, domain) {
                 .property("value", "playing")
                 .classed("btn-dark", false)
                 .classed("btn-danger", true);
-    
+
             // After 2 seconds, advance 1 trimester
             advanceMonthPlayInterval = setInterval(advanceMonth, 1500);
         }
@@ -303,13 +303,13 @@ function addTimeSlider(initialLeft, initialRight, domain) {
 // The dependent lists are used to highlight the graphs that are affected by the filter.
 // This function should be manually called
 function setupFilters(metadata,
-        filter_city_traversal_dependents = [],
-        filter_client_type_dependents = [],
-        filter_time_dependents = [],
-    ) {
+    filter_city_traversal_dependents = [],
+    filter_client_type_dependents = [],
+    filter_time_dependents = [],
+) {
     const dateParser = d3.utcParse("%Y-%-m-%-d");
     let dateExtent = [dateParser(metadata["date_min"]), dateParser(metadata["date_max"])];
-    
+
     if (filter.timeStart == null)
         filter.timeStart = dateExtent[0];
     if (filter.timeEnd == null)
@@ -332,22 +332,22 @@ function setupFilters(metadata,
                 .style("box-shadow", "0px 0px 0px var(--filter-accent)");
         }
     }
-    d3.select("#filter-city-traversal").on("mouseenter", function() {
+    d3.select("#filter-city-traversal").on("mouseenter", function () {
         highlight_start(filter_city_traversal_dependents);
     });
-    d3.select("#filter-city-traversal").on("mouseleave", function() {
+    d3.select("#filter-city-traversal").on("mouseleave", function () {
         highlight_stop(filter_city_traversal_dependents);
     });
-    d3.select("#filter-client-type").on("mouseenter", function() {
+    d3.select("#filter-client-type").on("mouseenter", function () {
         highlight_start(filter_client_type_dependents);
     });
-    d3.select("#filter-client-type").on("mouseleave", function() {
+    d3.select("#filter-client-type").on("mouseleave", function () {
         highlight_stop(filter_client_type_dependents);
     });
-    d3.select("#filter-time").on("mouseenter", function() {
+    d3.select("#filter-time").on("mouseenter", function () {
         highlight_start(filter_time_dependents);
     });
-    d3.select("#filter-time").on("mouseleave", function() {
+    d3.select("#filter-time").on("mouseleave", function () {
         highlight_stop(filter_time_dependents);
     });
 

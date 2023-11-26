@@ -162,12 +162,12 @@
                 .on("click", function (event) {
                     selectCityMap(this);
                 })
-                .on("mouseenter.tooltip", function(event) {
+                .on("mouseenter.tooltip", function (event) {
                     d3.select("#geo-tooltip")
                         .transition()
                         .style("opacity", 1);
                 })
-                .on("mousemove.tooltip", function(event) {
+                .on("mousemove.tooltip", function (event) {
                     const city = this.__data__.city;
                     const tooltip_text = `<b>${city}</b> <br> City`;
 
@@ -176,7 +176,7 @@
                         .style("left", (event.clientX + 28) + "px")
                         .style("top", (event.clientY - 28) + "px");
                 })
-                .on("mouseleave.tooltip", function(event) {
+                .on("mouseleave.tooltip", function (event) {
                     d3.select("#geo-tooltip")
                         .transition()
                         .style("opacity", 0)
@@ -185,7 +185,7 @@
                             d3.select("#geo-tooltip")
                                 .style("left", "0px")
                                 .style("top", "0px");
-                        }, () => {}); // we don't care if the transition was interrupted
+                        }, () => { }); // we don't care if the transition was interrupted
                 })
                 .each(function (d) {
                     if (d.city === filter.selectedCity) {
@@ -212,15 +212,15 @@
                 .attr("fill", "salmon")
                 .attr("stroke", d3.color("salmon").darker(1))
                 .attr("stroke-width", () => 2 / d3.zoomTransform(components.projection).k)
-                .on("click", function(event) {
+                .on("click", function (event) {
                     selectStationMap(this);
                 })
-                .on("mouseenter.tooltip", function(event) {
+                .on("mouseenter.tooltip", function (event) {
                     d3.select("#geo-tooltip")
                         .transition()
                         .style("opacity", 1);
                 })
-                .on("mousemove.tooltip", function(event) {
+                .on("mousemove.tooltip", function (event) {
                     const station_id = this.__data__.station;
                     const station_name = stations_metadata[station_id].name;
                     const tooltip_text = `<b>${station_name}</b> <br> Station`;
@@ -230,7 +230,7 @@
                         .style("left", (event.clientX + 28) + "px")
                         .style("top", (event.clientY - 28) + "px");
                 })
-                .on("mouseleave.tooltip", function(event) {
+                .on("mouseleave.tooltip", function (event) {
                     d3.select("#geo-tooltip")
                         .transition()
                         .style("opacity", 0)
@@ -239,7 +239,7 @@
                             d3.select("#geo-tooltip")
                                 .style("left", "0px")
                                 .style("top", "0px");
-                        }, () => {}); // we don't care if the transition was interrupted
+                        }, () => { }); // we don't care if the transition was interrupted
                 })
                 .each(function (d) {
                     if (d.station === filter.selectedStation) {
@@ -437,7 +437,7 @@
                     .attr("y1", yScale(maxBikes))
                     .attr("x2", width)
                     .attr("y2", yScale(maxBikes));
-                
+
                 // Add hoverable points to the line chart
                 chartContent.selectAll("circle")
                     .data(data)
@@ -456,7 +456,7 @@
                             .transition()
                             .attr("opacity", 1)
                             .attr("r", 7);
-                        
+
                         tooltip.transition()
                             .duration(200)
                             .style("opacity", .9);
@@ -571,10 +571,10 @@
                     .style("font-weight", (d) => (d === filter.selectedCity) ? "bold" : "normal")
                     .style("color", (d) => (d === filter.selectedCity) ? "var(--filter-accent)" : "black")
                     .style("cursor", "pointer")
-                    .on("mouseover", function(event) {
+                    .on("mouseover", function (event) {
                         d3.select(this).style("color", "var(--filter-accent)");
                     })
-                    .on("click", function(event) {
+                    .on("click", function (event) {
                         const city = d3.select(this).text();
 
                         const geo_city = d3.selectAll("path.geo-map-city")
@@ -583,7 +583,7 @@
 
                         selectCityMap(geo_city);
                     })
-                    .on("mouseout", function(event, d) {
+                    .on("mouseout", function (event, d) {
                         if (d !== city_chart_attributes.truncateLabel(filter.selectedCity))
                             d3.select(this).style("color", "black");
                     });
@@ -618,10 +618,10 @@
                     .style("font-weight", (d) => (d === station_chart_attributes.truncateLabel(metadata.stations[filter.selectedStation].name)) ? "bold" : "normal")
                     .style("color", (d) => (d === station_chart_attributes.truncateLabel(metadata.stations[filter.selectedStation].name)) ? "var(--filter-accent)" : "black")
                     .style("cursor", "pointer")
-                    .on("mouseover", function(event) {
+                    .on("mouseover", function (event) {
                         d3.select(this).style("color", "var(--filter-accent)");
                     })
-                    .on("click", function(event) {
+                    .on("click", function (event) {
                         const station = d3.select(this).text();
 
                         const geo_station = d3.selectAll("circle.station-pie")
@@ -630,7 +630,7 @@
 
                         selectStationMap(geo_station);
                     })
-                    .on("mouseout", function(event, d) {
+                    .on("mouseout", function (event, d) {
                         if (d !== station_chart_attributes.truncateLabel(metadata.stations[filter.selectedStation].name))
                             d3.select(this).style("color", "black");
                     });

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,6 +8,7 @@
     <link rel="stylesheet" href="../css/vis1.css">
     <link rel="stylesheet" href="../css/geo.css">
 </head>
+
 <body>
     <div id="nav"></div>
 
@@ -69,7 +71,7 @@
             components = geoMapSetup("#content", "100vw", "100%", bay_area_geo, city_geos, zoom_callback);
 
             components.map
-                .on("click", function(event) {
+                .on("click", function (event) {
                     if (filter.selectedStation === undefined && filter.selectedCity === undefined
                         // Clicks can overlap, we can't allow the map to overwrite actual selections
                         || !d3.select(event.target).classed("geo-map")
@@ -87,7 +89,7 @@
                     filter.selectedCity = undefined;
                     d3.select("#content").dispatch("data-update");
                 });
-            
+
             function selectCityMap(city_elem, visual_only = false) {
                 let city = city_elem.__data__.geo.properties.county;
                 if (!visual_only && city === filter.selectedCity)
@@ -110,24 +112,24 @@
             }
 
             d3.selectAll("path.geo-map-city")
-                .on("click", function(event) {
+                .on("click", function (event) {
                     selectCityMap(this);
                 })
-                .on("mouseenter.tooltip", function(event) {
+                .on("mouseenter.tooltip", function (event) {
                     d3.select("#geo-tooltip")
                         .transition()
                         .style("opacity", 1);
                 })
-                .on("mousemove.tooltip", function(event) {
+                .on("mousemove.tooltip", function (event) {
                     const city = this.__data__.city;
                     const tooltip_text = `<b>${city}</b> <br> City`;
-                    
+
                     d3.select("#geo-tooltip")
                         .html(tooltip_text)
                         .style("left", (event.clientX + 28) + "px")
                         .style("top", (event.clientY - 28) + "px");
                 })
-                .on("mouseleave.tooltip", function(event) {
+                .on("mouseleave.tooltip", function (event) {
                     d3.select("#geo-tooltip")
                         .transition()
                         .style("opacity", 0)
@@ -136,9 +138,9 @@
                             d3.select("#geo-tooltip")
                                 .style("left", "0px")
                                 .style("top", "0px");
-                        }, () => {}); // we don't care if the transition was interrupted
+                        }, () => { }); // we don't care if the transition was interrupted
                 })
-                .each(function(d) {
+                .each(function (d) {
                     if (d.city === filter.selectedCity)
                         selectCityMap(this, true);
                 });
@@ -159,7 +161,7 @@
                         return d3.sum(g.map((v) => v.total_trips))
                     },
                     // consider in/out trips as the same (don't distinguish the way of the trips)
-                    (d) => d.start_station_id >  d.end_station_id ? d.end_station_id : d.start_station_id,
+                    (d) => d.start_station_id > d.end_station_id ? d.end_station_id : d.start_station_id,
                     (d) => d.start_station_id <= d.end_station_id ? d.end_station_id : d.start_station_id
                 );
 
@@ -213,7 +215,7 @@
                 .append("svg")
                 .attr("width", legend_width)
                 .attr("height", legend_height)
-            
+
             legend_svg.append("rect")
                 .attr("fill", "white")
                 .attr("width", legend_width)
@@ -291,32 +293,32 @@
                     .selectAll("g.station-pie")
                     .data(pie_data)
                     .join("g")
-                        .classed("station-pie", true)
-                        .attr("stroke", d3.color("salmon").darker(1))
-                        .attr("transform", (d) => {
-                            return `translate(${d.x}, ${d.y}) scale(${1 / d3.zoomTransform(map.node()).k})`;
-                        });
-                
+                    .classed("station-pie", true)
+                    .attr("stroke", d3.color("salmon").darker(1))
+                    .attr("transform", (d) => {
+                        return `translate(${d.x}, ${d.y}) scale(${1 / d3.zoomTransform(map.node()).k})`;
+                    });
+
                 d3.selectAll("g.station-pie")
-                    .on("click", function(event) {
+                    .on("click", function (event) {
                         selectStationMap(this);
                     })
-                    .on("mouseenter", function(event) {
+                    .on("mouseenter", function (event) {
                         d3.select("#geo-tooltip")
                             .transition()
                             .style("opacity", 1);
                     })
-                    .on("mousemove", function(event) {
+                    .on("mousemove", function (event) {
                         const station_id = this.__data__.station;
                         const station_name = metadata.stations[station_id].name;
                         const tooltip_text = `<b>${station_name}</b> <br> Station`;
-                        
+
                         d3.select("#geo-tooltip")
                             .html(tooltip_text)
                             .style("left", (event.clientX + 28) + "px")
                             .style("top", (event.clientY - 28) + "px");
                     })
-                    .on("mouseleave", function(event) {
+                    .on("mouseleave", function (event) {
                         d3.select("#geo-tooltip")
                             .transition()
                             .style("opacity", 0)
@@ -325,9 +327,9 @@
                                 d3.select("#geo-tooltip")
                                     .style("left", "0px")
                                     .style("top", "0px")
-                            }, () => {}); // we don't care if the transition was interrupted
+                            }, () => { }); // we don't care if the transition was interrupted
                     });
-                    
+
                 // NOTE: this is run everytime even though it only exists for when the filter is already initialized in the URL
                 let selected_station_pie = d3.selectAll("g.station-pie")
                     .filter((d) => d.station == filter.selectedStation)
@@ -339,7 +341,7 @@
                 pie_chart_groups
                     .selectAll("path")
                     .remove();
-                
+
                 pie_chart_groups
                     .append("path")
                     .classed("station-pie-bikes", true)
@@ -350,7 +352,7 @@
                         .endAngle(d.pie[0].endAngle)()
                     )
                     .attr("fill", (d) => color(d.pie[0].data.key))
-                
+
                 pie_chart_groups
                     .append("path")
                     .classed("station-pie-docks", true)
@@ -384,7 +386,7 @@
                 });
 
                 console.log("Status data filtered");
-                
+
                 update_callbacks.forEach((callback) => callback(dataFiltered));
             }
 
@@ -446,7 +448,7 @@
                 });
 
                 console.log("Data filtered");
-                
+
                 update_callbacks.forEach((callback) => callback(dataFiltered));
             }
 
@@ -493,28 +495,29 @@
                 metadata_data
                     .then((metadata) => {
                         setupFilters(metadata);
-        
+
                         const trip_data_draw_callbacks = [
                             visTripVectors(metadata, projection)
                         ];
-        
+
                         const status_data_draw_callbacks = [
                             visStationAvailability(metadata, projection)
                         ];
-        
+
                         trip_small_data
                             .then((data) => drawTripData(metadata, data, trip_data_draw_callbacks))
-                            .catch(function(err){console.log(err)});
-        
+                            .catch(function (err) { console.log(err) });
+
                         status_small_data
                             .then((data) => drawStatusData(metadata, data, status_data_draw_callbacks))
-                            .catch(function(err){console.log(err)});
+                            .catch(function (err) { console.log(err) });
                     })
-                    .catch(function(err){console.log(err)});            
+                    .catch(function (err) { console.log(err) });
             })
-            .catch(function(err){console.log(err)});
+            .catch(function (err) { console.log(err) });
 
 
     </script>
 </body>
+
 </html>

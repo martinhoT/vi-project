@@ -78,7 +78,7 @@ function clientBarUpdate(bar_data, chart_attributes) {
 
     // Create x and y scales
     var xScale = d3.scaleBand()
-    .domain(bar_data.map(d => d[0])) 
+        .domain(bar_data.map(d => d[0]))
         .range([0, w])
         .padding(0.1);
 
