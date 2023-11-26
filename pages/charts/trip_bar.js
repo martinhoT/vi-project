@@ -160,7 +160,7 @@ function tripBarSetup(element, att) {
     // Add Y axis label
     outer_svg.append("text")
         .attr("transform", "rotate(-90)")
-        .attr("y", 0 - att.margin.left)
+        .attr("y", -5 - att.margin.left)
         .attr("x", 0 - h / 2)
         .attr("dy", "1em")
         .style("text-anchor", "middle")
