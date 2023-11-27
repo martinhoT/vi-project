@@ -526,13 +526,13 @@
 
             d3.select("#content-traffic-sort").on("input", function () {
                 const stacked = d3.select("#content-traffic-stacked").property("checked");
-                city_chart_attributes.sortContent(this.value, d3.select("#content-traffic-sort-asc").property("checked"), stacked);
+                city_chart_attributes.sortContent(this.value, d3.select("#content-traffic-sort-asc").property("checked"), false);
                 station_chart_attributes.sortContent(this.value, d3.select("#content-traffic-sort-asc").property("checked"), stacked);
             });
 
             d3.select("#content-traffic-sort-asc").on("input", function () {
                 const stacked = d3.select("#content-traffic-stacked").property("checked");
-                city_chart_attributes.sortContent(d3.select("#content-traffic-sort").node().value, this.checked, stacked);
+                city_chart_attributes.sortContent(d3.select("#content-traffic-sort").node().value, this.checked, false);
                 station_chart_attributes.sortContent(d3.select("#content-traffic-sort").node().value, this.checked, stacked);
             });
 
@@ -576,9 +576,8 @@
 
                 const sort_type = d3.select("#content-traffic-sort").node().value;
                 const sort_ascending = d3.select("#content-traffic-sort-asc").property("checked");
-                const stacked = d3.select("#content-traffic-stacked").property("checked");
 
-                tripBarUpdate(city_data, city_chart_attributes, sort_type, sort_ascending, stacked);
+                tripBarUpdate(city_data, city_chart_attributes, sort_type, sort_ascending, false);
 
                 // Mark the selected station/city in bold on the X axis
                 city_graph.selectAll(".x-axis .tick text")
